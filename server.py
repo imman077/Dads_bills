@@ -273,9 +273,9 @@ def decide(file_id, action):
     # Action is reject
     try:
         try:
-            service.files().delete(fileId=file_id).execute()
+            drive_helper.move_file_to_rejected(service, file_id)
         except Exception as de:
-            print(f"[Warning] Failed to delete file {file_id} from Drive: {de}")
+            print(f"[Warning] Failed to move file {file_id} to Rejected: {de}")
             
         # Update Firestore status
         firebase_helper.update_file_status(file_id, "rejected")

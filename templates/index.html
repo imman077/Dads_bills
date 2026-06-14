@@ -2131,34 +2131,53 @@
 
       function rejectSyncFile(fileId, filename, originalCategory) {
         const row = document.getElementById(`sync-file-${fileId}`);
-        const selectEl = document.getElementById(`sync-folder-${fileId}`);
-        const category = selectEl ? selectEl.value : originalCategory;
-
-        showToast(`Rejected ${filename} (Stayed in Google Drive)`, "info");
+        
         if (row) {
-          row.innerHTML = `
-            <div class="text-[10px] text-red-500 font-bold py-1 flex items-center gap-1.5">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-3.5 h-3.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-              </svg>
-              <span>Stayed in Google Drive (not saved locally)</span>
-            </div>
-          `;
-          
-          setTimeout(() => {
-            row.remove();
-            const logsDiv = document.getElementById("drive-sync-logs");
-            const remainingCount = logsDiv ? logsDiv.querySelectorAll("[id^='sync-file-']").length : 0;
-            if (remainingCount === 0) {
-              logsDiv.innerHTML = `<div class="text-green-600 font-bold text-xs">🎉 All files successfully synced!</div>`;
-            } else {
-              const countSpan = document.getElementById("sync-remaining-count");
-              const labelSpan = document.getElementById("sync-remaining-label");
-              if (countSpan) countSpan.textContent = remainingCount;
-              if (labelSpan) labelSpan.textContent = remainingCount === 1 ? "file" : "files";
-            }
-          }, 2000);
+          const buttons = row.querySelectorAll("button");
+          buttons.forEach((btn) => (btn.disabled = true));
         }
+
+        fetch(`/decide/${fileId}/reject`)
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error("Failed to reject file on server.");
+            }
+            return res.json();
+          })
+          .then((data) => {
+            showToast(`Rejected ${filename} (Stayed in Google Drive)`, "info");
+            if (row) {
+              row.innerHTML = `
+                <div class="text-[10px] text-red-500 font-bold py-1 flex items-center gap-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-3.5 h-3.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+                  <span>Stayed in Google Drive (not saved locally)</span>
+                </div>
+              `;
+              
+              setTimeout(() => {
+                row.remove();
+                const logsDiv = document.getElementById("drive-sync-logs");
+                const remainingCount = logsDiv ? logsDiv.querySelectorAll("[id^='sync-file-']").length : 0;
+                if (remainingCount === 0) {
+                  logsDiv.innerHTML = `<div class="text-green-600 font-bold text-xs">🎉 All files successfully synced!</div>`;
+                } else {
+                  const countSpan = document.getElementById("sync-remaining-count");
+                  const labelSpan = document.getElementById("sync-remaining-label");
+                  if (countSpan) countSpan.textContent = remainingCount;
+                  if (labelSpan) labelSpan.textContent = remainingCount === 1 ? "file" : "files";
+                }
+              }, 2000);
+            }
+          })
+          .catch((err) => {
+            showToast(err.message || "Failed to reject file", "error");
+            if (row) {
+              const buttons = row.querySelectorAll("button");
+              buttons.forEach((btn) => (btn.disabled = false));
+            }
+          });
       }
     </script>
   </body>

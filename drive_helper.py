@@ -198,6 +198,8 @@ def list_sync_files(service):
     sync_files = []
     for sub in subfolders:
         sub_name = sub['name']
+        if sub_name == 'Rejected':
+            continue
         sub_id = sub['id']
         
         # List all files inside this subfolder
@@ -239,3 +241,26 @@ def download_and_delete_file(service, file_id, local_path):
         
     # Delete the source file from Google Drive after successful local download
     service.files().delete(fileId=file_id).execute()
+
+def move_file_to_rejected(service, file_id):
+    try:
+        # 1. Get or create the root DadBillsSync folder
+        root_folder_id = get_or_create_folder(service, 'DadBillsSync')
+        # 2. Get or create the Rejected subfolder inside DadBillsSync
+        rejected_folder_id = get_or_create_folder(service, 'Rejected', parent_id=root_folder_id)
+        
+        # 3. Retrieve the current parents of the file
+        file = service.files().get(fileId=file_id, fields='parents').execute()
+        previous_parents = ",".join(file.get('parents', []))
+        
+        # 4. Move the file by adding the Rejected parent and removing the old parents
+        service.files().update(
+            fileId=file_id,
+            addParents=rejected_folder_id,
+            removeParents=previous_parents,
+            fields='id, parents'
+        ).execute()
+        print(f"[Google Drive] Successfully moved file {file_id} to Rejected folder.")
+    except Exception as e:
+        print(f"[Error] Failed to move file {file_id} to Rejected folder: {e}")
+
