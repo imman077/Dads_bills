@@ -309,6 +309,7 @@
               id="file-input"
               accept="application/pdf,image/*"
               onchange="handleFileSelect(event)"
+              multiple
               class="hidden"
             />
 
@@ -804,7 +805,7 @@
     <script>
       const IS_ADMIN = "{{ 'true' if is_admin else 'false' }}" === "true";
       let currentTab = "upload";
-      let selectedFile = null;
+      let selectedFiles = [];
       let autoPollTimer = null;
 
       // Toast Notification System
@@ -901,31 +902,42 @@
 
       // Trigger input file dialog
       function triggerFileSelect() {
-        if (!selectedFile) {
+        if (selectedFiles.length === 0) {
           document.getElementById("file-input").click();
         }
       }
 
       // Handle standard file selection
       function handleFileSelect(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
 
-        const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-        const isImage = (file.type.startsWith("image/") && file.type !== "image/gif") || /\.(jpe?g|png|webp)$/i.test(file.name);
-        if (!isPdf && !isImage) {
-          showToast("Please select a valid PDF or image file.", "error");
+        const validFiles = [];
+        for (const file of files) {
+          const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+          const isImage = (file.type.startsWith("image/") && file.type !== "image/gif") || /\.(jpe?g|png|webp)$/i.test(file.name);
+          if (!isPdf && !isImage) {
+            showToast(`"${file.name}" is not a valid PDF or image.`, "error");
+            continue;
+          }
+          validFiles.push(file);
+        }
+
+        if (validFiles.length === 0) {
           resetFile(e);
           return;
         }
 
-        selectedFile = file;
+        selectedFiles = validFiles;
 
         // Update UI elements
-        document.getElementById("selected-filename").textContent = file.name;
-        document.getElementById("selected-filesize").textContent = formatBytes(
-          file.size,
-        );
+        const totalSize = selectedFiles.reduce((acc, f) => acc + f.size, 0);
+        if (selectedFiles.length === 1) {
+          document.getElementById("selected-filename").textContent = selectedFiles[0].name;
+        } else {
+          document.getElementById("selected-filename").textContent = `${selectedFiles.length} files selected`;
+        }
+        document.getElementById("selected-filesize").textContent = formatBytes(totalSize);
 
         document.getElementById("drop-state-empty").classList.add("hidden");
         document
@@ -936,7 +948,7 @@
       // Clear file selection
       function resetFile(e) {
         if (e) e.stopPropagation();
-        selectedFile = null;
+        selectedFiles = [];
         document.getElementById("file-input").value = "";
         document.getElementById("drop-state-empty").classList.remove("hidden");
         document.getElementById("drop-state-selected").classList.add("hidden");
@@ -960,7 +972,7 @@
           (e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (!selectedFile) {
+            if (selectedFiles.length === 0) {
               dragArea.classList.add("bg-[#ECEBE5]", "border-brand/40");
             }
           },
@@ -982,23 +994,32 @@
 
       dragArea.addEventListener("drop", (e) => {
         const dt = e.dataTransfer;
-        const file = dt.files[0];
-        if (!file) return;
+        const files = Array.from(dt.files);
+        if (files.length === 0) return;
 
-        const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-        const isImage = (file.type.startsWith("image/") && file.type !== "image/gif") || /\.(jpe?g|png|webp)$/i.test(file.name);
-        if (!isPdf && !isImage) {
-          showToast("Please drop a valid PDF or image file.", "error");
-          return;
+        const validFiles = [];
+        for (const file of files) {
+          const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+          const isImage = (file.type.startsWith("image/") && file.type !== "image/gif") || /\.(jpe?g|png|webp)$/i.test(file.name);
+          if (!isPdf && !isImage) {
+            showToast(`"${file.name}" is not a valid PDF or image.`, "error");
+            continue;
+          }
+          validFiles.push(file);
         }
 
-        selectedFile = file;
+        if (validFiles.length === 0) return;
+
+        selectedFiles = validFiles;
         document.getElementById("file-input").files = dt.files;
 
-        document.getElementById("selected-filename").textContent = file.name;
-        document.getElementById("selected-filesize").textContent = formatBytes(
-          file.size,
-        );
+        const totalSize = selectedFiles.reduce((acc, f) => acc + f.size, 0);
+        if (selectedFiles.length === 1) {
+          document.getElementById("selected-filename").textContent = selectedFiles[0].name;
+        } else {
+          document.getElementById("selected-filename").textContent = `${selectedFiles.length} files selected`;
+        }
+        document.getElementById("selected-filesize").textContent = formatBytes(totalSize);
 
         document.getElementById("drop-state-empty").classList.add("hidden");
         document
@@ -1061,7 +1082,7 @@
       }
 
       // Handle Upload Request
-      function handleUpload(event) {
+      async function handleUpload(event) {
         event.preventDefault();
 
         const nameInput = document.getElementById("uploader-name");
@@ -1094,7 +1115,7 @@
           return;
         }
 
-        if (!selectedFile) {
+        if (selectedFiles.length === 0) {
           showToast("Please attach a PDF or image file to send.", "error");
           return;
         }
@@ -1102,70 +1123,82 @@
         const btnSubmit = document.getElementById("btn-submit");
         const originalText = btnSubmit.innerHTML;
 
-        // Loading State on button
         btnSubmit.disabled = true;
-        btnSubmit.innerHTML = `
-        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        Sending...
-      `;
 
-        const formData = new FormData();
-        formData.append("name", name);
-        formData.append("category", category);
-        formData.append("custom_folder", customFolder);
-        formData.append("pdf", selectedFile);
+        let uploadSuccessCount = 0;
+        let lastError = null;
 
-        fetch("/upload", {
-          method: "POST",
-          body: formData,
-        })
-          .then((res) => {
+        for (let i = 0; i < selectedFiles.length; i++) {
+          const file = selectedFiles[i];
+          btnSubmit.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Uploading (${i + 1}/${selectedFiles.length})...
+          `;
+
+          let finalName = name;
+          if (selectedFiles.length > 1) {
+            finalName = `${name} (${i + 1})`;
+          }
+
+          const formData = new FormData();
+          formData.append("name", finalName);
+          formData.append("category", category);
+          formData.append("custom_folder", customFolder);
+          formData.append("pdf", file);
+
+          try {
+            const res = await fetch("/upload", {
+              method: "POST",
+              body: formData,
+            });
             if (!res.ok) {
-              return res.json().then((err) => {
-                throw new Error(err.error || "Server error");
-              });
+              const err = await res.json();
+              throw new Error(err.error || "Server error");
             }
-            return res.json();
-          })
-          .then((data) => {
-            showToast("Bill sent successfully! 🎉", "success");
+            uploadSuccessCount++;
+          } catch (error) {
+            lastError = error;
+            break;
+          }
+        }
 
-            // Show Success screen state
-            document.getElementById("upload-form").classList.add("hidden");
-            document.getElementById("success-display-filename").textContent =
-              selectedFile.name;
-            document.getElementById("success-display-uploader").textContent =
-              `Name: ${name}`;
+        if (uploadSuccessCount === selectedFiles.length) {
+          showToast(`All ${selectedFiles.length} files uploaded successfully! 🎉`, "success");
 
-            const categoryMap = {
-              current: "Current Bill",
-              water: "Water Bill Receipt",
-              jio: "Jio Fiber",
-              other: "Other",
-            };
-            const folderLabel =
-              category === "custom"
-                ? customFolder
-                : categoryMap[category] || "Other";
-            document.getElementById("success-display-category").textContent =
-              `📁 ${folderLabel}`;
-            document
-              .getElementById("upload-success-state")
-              .classList.remove("hidden");
+          // Show Success screen state
+          document.getElementById("upload-form").classList.add("hidden");
+          
+          if (selectedFiles.length === 1) {
+            document.getElementById("success-display-filename").textContent = selectedFiles[0].name;
+          } else {
+            document.getElementById("success-display-filename").textContent = `${selectedFiles.length} files successfully uploaded.`;
+          }
+          document.getElementById("success-display-uploader").textContent = `Name: ${name}`;
 
-            // Query server count badge in background
-            checkPendingCountBadge();
-          })
-          .catch((error) => {
-            showToast(error.message || "Failed to upload bill.", "error");
-          })
-          .finally(() => {
-            btnSubmit.disabled = false;
-            btnSubmit.innerHTML = originalText;
-          });
+          const categoryMap = {
+            current: "Current Bill",
+            water: "Water Bill Receipt",
+            jio: "Jio Fiber",
+            other: "Other",
+          };
+          const folderLabel =
+            category === "custom"
+              ? customFolder
+              : categoryMap[category] || "Other";
+          document.getElementById("success-display-category").textContent = `📁 ${folderLabel}`;
+          document.getElementById("upload-success-state").classList.remove("hidden");
+
+          // Query server count badge in background
+          checkPendingCountBadge();
+        } else {
+          showToast(lastError ? lastError.message : "Failed to upload files.", "error");
+        }
+
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = originalText;
       }
 
       // Reset Form to upload state
