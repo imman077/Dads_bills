@@ -43,12 +43,33 @@ def get_drive_service(credentials_path):
         print(f"[Google Drive] Error building service: {e}")
         return None
 
-def generate_auth_url(credentials_path, redirect_uri):
-    flow = Flow.from_client_secrets_file(
+def get_flow(credentials_path, redirect_uri, code_verifier=None):
+    # 1. Try loading from environment variable
+    cred_json = os.environ.get("GOOGLE_CREDENTIALS")
+    if cred_json:
+        try:
+            cred_dict = json.loads(cred_json)
+            return Flow.from_client_config(
+                cred_dict,
+                scopes=SCOPES,
+                redirect_uri=redirect_uri,
+                code_verifier=code_verifier,
+                autogenerate_code_verifier=False if code_verifier else True
+            )
+        except Exception as e:
+            print(f"[Google Drive] Error loading flow from environment variable: {e}")
+            
+    # 2. Try loading from local file
+    return Flow.from_client_secrets_file(
         credentials_path,
         scopes=SCOPES,
-        redirect_uri=redirect_uri
+        redirect_uri=redirect_uri,
+        code_verifier=code_verifier,
+        autogenerate_code_verifier=False if code_verifier else True
     )
+
+def generate_auth_url(credentials_path, redirect_uri):
+    flow = get_flow(credentials_path, redirect_uri)
     # Disable PKCE (code_challenge) - not needed for confidential web clients
     auth_url, _ = flow.authorization_url(
         prompt='consent',
@@ -58,12 +79,10 @@ def generate_auth_url(credentials_path, redirect_uri):
     return auth_url, flow.code_verifier
 
 def save_credentials(credentials_path, redirect_uri, authorization_response_url, code_verifier=None):
-    flow = Flow.from_client_secrets_file(
+    flow = get_flow(
         credentials_path,
-        scopes=SCOPES,
         redirect_uri=redirect_uri,
-        code_verifier=code_verifier,
-        autogenerate_code_verifier=False
+        code_verifier=code_verifier
     )
     flow.fetch_token(authorization_response=authorization_response_url)
     creds = flow.credentials

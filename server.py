@@ -41,8 +41,8 @@ def admin():
 
 @app.route("/oauth/connect")
 def oauth_connect():
-    if not os.path.exists(CREDENTIALS_PATH):
-        return "Missing credentials.json. Please upload Google OAuth credentials on the server first.", 400
+    if not os.path.exists(CREDENTIALS_PATH) and "GOOGLE_CREDENTIALS" not in os.environ:
+        return "Missing credentials.json or GOOGLE_CREDENTIALS environment variable. Please configure Google OAuth credentials first.", 400
     redirect_uri = request.url_root.rstrip('/') + "/oauth2callback"
     auth_url, code_verifier = drive_helper.generate_auth_url(CREDENTIALS_PATH, redirect_uri)
     session['code_verifier'] = code_verifier
