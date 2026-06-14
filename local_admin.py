@@ -3,6 +3,8 @@ import socket
 import requests
 from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file
 import io
+import tkinter as tk
+from tkinter import filedialog
 
 app = Flask(__name__)
 app.secret_key = 'dad-bills-local-admin-secret-key-2026'
@@ -101,10 +103,52 @@ def sync_drive():
         r_list = requests.get(f"{CLOUD_SERVER_URL}/sync-drive")
         if r_list.status_code != 200:
             return jsonify({"error": f"Failed to get sync list from Cloud Server: {r_list.text}"}), r_list.status_code
-        return jsonify(r_list.json())
+        
+        data = r_list.json()
+        if isinstance(data, dict) and data.get("status") == "success":
+            files = data.get("files", [])
+            for f in files:
+                category_key = f.get("category", "other")
+                # Look up key first, fallback to the raw category value
+                folder_name = SUBFOLDERS.get(category_key, category_key)
+                if not folder_name:
+                    folder_name = "Other"
+                # Normalize and clean folder name
+                folder_name = "".join(c for c in folder_name if c.isalnum() or c in (" ", "-", "_")).strip()
+                if not folder_name:
+                    folder_name = "Other"
+                # Get default absolute save directory on the laptop
+                f["default_path"] = get_save_folder(folder_name)
+                
+        return jsonify(data)
     except Exception as e:
         print(f"[Local Admin] Error checking sync: {e}")
         return jsonify({"error": f"Failed to check sync list: {str(e)}"}), 500
+
+@app.route("/browse-folder")
+def browse_folder():
+    try:
+        root = tk.Tk()
+        root.withdraw()
+        root.wm_attributes('-topmost', 1)
+        
+        initial_dir = BASE_DIR if os.path.exists(BASE_DIR) else os.path.expanduser("~")
+        
+        folder_path = filedialog.askdirectory(
+            parent=root,
+            initialdir=initial_dir,
+            title="Select Folder on Laptop to Save Bills"
+        )
+        root.destroy()
+        
+        if folder_path:
+            folder_path = os.path.normpath(folder_path)
+            return jsonify({"status": "success", "path": folder_path})
+        else:
+            return jsonify({"status": "cancelled"})
+    except Exception as e:
+        print(f"[Error] Failed to open folder picker: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/sync-accept", methods=["POST"])
 def sync_accept():
@@ -123,7 +167,18 @@ def sync_accept():
             return jsonify({"error": f"Failed to download file from Cloud Server: {r_file.text}"}), r_file.status_code
             
         # 2. Determine local folder and save path
-        save_dir = get_save_folder(folder_name)
+        if os.path.isabs(folder_name):
+            save_dir = folder_name
+            try:
+                os.makedirs(save_dir, exist_ok=True)
+            except Exception as e:
+                print(f"[Warning] Custom path {save_dir} not writeable, falling back: {e}")
+                fallback_base = os.path.join(os.path.expanduser("~"), "Bills")
+                save_dir = os.path.join(fallback_base, "Other")
+                os.makedirs(save_dir, exist_ok=True)
+        else:
+            save_dir = get_save_folder(folder_name)
+            
         base, ext = os.path.splitext(filename)
         path = os.path.join(save_dir, filename)
         

@@ -1924,24 +1924,24 @@
                   const safeName = f.name.replace(/'/g, "\\'");
                   const safeCategory = f.category.replace(/'/g, "\\'");
                   
-                  const standardFolders = ["Current Bill", "Water Bill Receipt", "Jio Fiber", "Other"];
-                  let selectOptions = "";
-                  if (f.category && !standardFolders.includes(f.category)) {
-                    selectOptions += `<option value="${escapeHTML(f.category)}" selected>${escapeHTML(f.category)}</option>`;
-                  }
-                  standardFolders.forEach((folder) => {
-                    selectOptions += `<option value="${folder}" ${f.category === folder ? 'selected' : ''}>${folder}</option>`;
-                  });
-
                   html += `
                     <div id="sync-file-${f.id}" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-white border border-gray-200 rounded-xl shadow-xs">
                       <div class="min-w-0 flex-1">
                         <p class="font-bold text-gray-800 text-[11px] truncate" title="${escapeHTML(f.name)}">${escapeHTML(f.name)}</p>
-                        <div class="flex items-center gap-1.5 mt-1.5">
-                          <span class="text-[9px] text-gray-400">Save to:</span>
-                          <select id="sync-folder-${f.id}" class="bg-gray-50 border border-gray-200 text-gray-700 text-[9px] rounded-lg px-2 py-0.5 font-bold focus:outline-none focus:ring-1 focus:ring-brand cursor-pointer">
-                            ${selectOptions}
-                          </select>
+                        <div class="flex items-center gap-1.5 mt-1.5 w-full">
+                          <span class="text-[9px] text-gray-400 shrink-0">Save to:</span>
+                          <input 
+                            type="text" 
+                            id="sync-path-${f.id}" 
+                            value="${escapeHTML(f.default_path || '')}" 
+                            class="w-full bg-gray-50 border border-gray-200 text-gray-700 text-[9px] rounded-lg px-2 py-1 font-semibold focus:outline-none focus:ring-1 focus:ring-brand"
+                          />
+                          <button 
+                            onclick="browseLaptopFolder('${f.id}')"
+                            class="shrink-0 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 text-[9px] font-bold px-2 py-1 rounded-lg transition-all cursor-pointer font-bold"
+                          >
+                            Browse...
+                          </button>
                         </div>
                       </div>
                       <div class="flex items-center gap-2 shrink-0 justify-end">
@@ -1978,10 +1978,41 @@
           });
       }
 
+      function browseLaptopFolder(fileId) {
+        const pathInput = document.getElementById(`sync-path-${fileId}`);
+        if (!pathInput) return;
+        
+        fetch("/browse-folder")
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error("Failed to open folder picker on laptop.");
+            }
+            return res.json();
+          })
+          .then((data) => {
+            if (data.status === "success" && data.path) {
+              pathInput.value = data.path;
+              showToast("Folder selected successfully!", "success");
+            }
+          })
+          .catch((err) => {
+            showToast(err.message || "Failed to select folder", "error");
+          });
+      }
+
       function acceptSyncFile(fileId, filename) {
         const row = document.getElementById(`sync-file-${fileId}`);
-        const selectEl = document.getElementById(`sync-folder-${fileId}`);
-        const category = selectEl ? selectEl.value : "Other";
+        const pathInput = document.getElementById(`sync-path-${fileId}`);
+        
+        let category = "Other";
+        if (pathInput) {
+          category = pathInput.value.trim();
+          if (!category) {
+            showToast("Please specify a folder path to save the file.", "error");
+            return;
+          }
+        }
+        
         const btn = row ? row.querySelector("button:last-child") : null;
 
         if (btn) {
