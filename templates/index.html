@@ -1924,6 +1924,8 @@
                   const safeName = f.name.replace(/'/g, "\\'");
                   const safeCategory = f.category.replace(/'/g, "\\'");
                   
+                  const defaultPath = f.default_path || 'F:\\Bills\\Other';
+                  
                   const isImage = /\.(jpe?g|png|webp)$/i.test(f.name);
                   const iconHTML = isImage
                     ? `<div class="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center shrink-0">
@@ -1957,8 +1959,8 @@
                             <input 
                               type="text" 
                               id="sync-path-${f.id}" 
-                              value="${escapeHTML(f.default_path || '')}" 
-                              class="w-full bg-gray-50 border border-gray-200 text-gray-800 text-xs rounded-xl px-3 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand"
+                              value="${escapeHTML(defaultPath)}" 
+                              class="flex-grow min-w-[150px] sm:min-w-[250px] md:min-w-[320px] bg-gray-50 border border-gray-200 text-gray-800 text-xs rounded-xl px-3 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand shadow-inner"
                             />
                             <button 
                               onclick="browseLaptopFolder('${f.id}')"
