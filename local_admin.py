@@ -94,6 +94,60 @@ def get_pending():
         print(f"[Error] Failed to fetch pending from Cloud Server: {e}")
         return jsonify([])
 
+@app.route("/sync-drive")
+def sync_drive():
+    try:
+        # 1. Fetch list of files to sync from Cloud Server
+        r_list = requests.get(f"{CLOUD_SERVER_URL}/sync-drive")
+        if r_list.status_code != 200:
+            return jsonify({"error": f"Failed to get sync list from Cloud Server: {r_list.text}"}), r_list.status_code
+            
+        data = r_list.json()
+        files = data.get("files", [])
+        
+        synced_files = []
+        for item in files:
+            file_id = item["id"]
+            filename = item["name"]
+            folder_name = item["category"]  # e.g., "Current Bill", "Other"
+            
+            # 2. Fetch the file content from Cloud Server
+            r_file = requests.get(f"{CLOUD_SERVER_URL}/view/{file_id}")
+            if r_file.status_code != 200:
+                print(f"[Local Admin] Failed to download file {filename} (ID: {file_id})")
+                continue
+                
+            # 3. Save the file locally on laptop disk
+            save_dir = get_save_folder(folder_name)
+            base, ext = os.path.splitext(filename)
+            path = os.path.join(save_dir, filename)
+            
+            counter = 1
+            while os.path.exists(path):
+                filename = f"{base}_{counter}{ext}"
+                path = os.path.join(save_dir, filename)
+                counter += 1
+                
+            with open(path, "wb") as f_out:
+                f_out.write(r_file.content)
+            print(f"[Local Admin] Saved synced file to: {path}")
+            
+            # 4. Tell Cloud Server to approve/delete from Drive & mark as approved in Firestore
+            r_decide = requests.get(f"{CLOUD_SERVER_URL}/decide/{file_id}/approve")
+            if r_decide.status_code == 200:
+                synced_files.append({
+                    "filename": filename,
+                    "folder": folder_name
+                })
+            else:
+                print(f"[Local Admin] Cloud approval state failed to sync for file {filename}")
+                
+        return jsonify({"status": "success", "synced": synced_files})
+        
+    except Exception as e:
+        print(f"[Local Admin] Error during sync: {e}")
+        return jsonify({"error": f"Sync failed: {str(e)}"}), 500
+
 @app.route("/view/<file_id>")
 def view_pdf(file_id):
     # Proxy the file preview stream from the Cloud Server

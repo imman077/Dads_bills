@@ -190,6 +190,18 @@ def get_pending():
         print(f"[Error] Failed to fetch pending from Firestore: {e}")
         return jsonify([])
 
+@app.route("/sync-drive")
+def sync_drive():
+    service = drive_helper.get_drive_service(CREDENTIALS_PATH)
+    if not service:
+        return jsonify({"error": "Google Drive is not connected."}), 400
+    try:
+        files = drive_helper.list_sync_files(service)
+        return jsonify({"status": "success", "files": files})
+    except Exception as e:
+        print(f"[Error] Sync drive failed: {e}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/view/<file_id>")
 def view_pdf(file_id):
     service = drive_helper.get_drive_service(CREDENTIALS_PATH)
