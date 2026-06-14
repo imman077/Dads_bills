@@ -1647,14 +1647,15 @@
 
         // Check for Google Drive OAuth success redirect param
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('drive_connected') === 'true') {
+        const justConnected = urlParams.get('drive_connected') === 'true';
+        if (justConnected) {
           showToast("Google Drive connected successfully! 🎉", "success");
           // Clean query params from URL
           const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
           window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
           
-          // For the client: immediately show the upload form without waiting for
-          // the async status check (avoids Firestore commit race condition)
+          // Immediately show the upload form — we know Drive is connected
+          // because we just returned from the OAuth flow
           if (!IS_ADMIN) {
             const clientAlert = document.getElementById("client-drive-alert");
             const uploadForm = document.getElementById("upload-form");
@@ -1663,8 +1664,11 @@
           }
         }
         
-        // Check Drive connection status
-        checkGoogleDriveStatus();
+        // Only check Drive status if we didn't just connect — otherwise the
+        // async Firestore read may return stale data and hide the form again
+        if (!justConnected) {
+          checkGoogleDriveStatus();
+        }
       });
 
       // Heartbeat check to monitor server connection
