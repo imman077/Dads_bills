@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+jspm_packages/
+web_modules/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Build/Dist outputs
+dist/
+build/
+out/
+
+# Python / Project Local Cache & Credentials
+__pycache__/
+*.pyc
+cloud_url.txt
+firebase-credentials.json
+credentials.json
+token.json
+
+# Backups
+hunger_free_erp_backup/
+

@@ -1,0 +1,1869 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dad Bills - Easy PDF Share</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for premium design -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', "sans-serif"],
+              outfit: ['"Outfit"', "sans-serif"],
+            },
+            colors: {
+              brand: {
+                DEFAULT: "#2D6A4F", // Rich dark green matching the mockup
+                hover: "#1E4637", // Slightly darker shade for hover
+                light: "#EAF5F0", // Extremely soft mint/green tint
+                accent: "#40916C", // Mid-green accent
+              },
+              warmbg: "#F9F9F7", // Warm off-white background
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      /* Custom subtle animations */
+      .fade-in {
+        animation: fadeIn 0.3s ease-out forwards;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .toast-enter {
+        animation: toastEnter 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)
+          forwards;
+      }
+      @keyframes toastEnter {
+        from {
+          opacity: 0;
+          transform: translateY(-20px) scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+    </style>
+  </head>
+  <body
+    class="bg-warmbg font-sans min-h-screen text-gray-800 antialiased flex flex-col"
+  >
+    <!-- Header Section -->
+    <header
+      class="sticky top-0 bg-white border-b border-gray-100 shadow-sm z-30"
+    >
+      <div class="max-w-xl mx-auto px-4 py-3 flex items-center justify-between">
+        <!-- Logo Group -->
+        <div class="flex items-center gap-2.5">
+          <!-- Orange Folder Icon -->
+          <div
+            class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-500 shadow-sm"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              class="w-6 h-6"
+            >
+              <path
+                d="M19.5 21a3 3 0 0 0 3-3v-4.5a3 3 0 0 0-3-3h-1.5V9a3 3 0 0 0-3-3h-5.344a4.5 4.5 0 0 1-3.181-1.318L5.22 3.432A3 3 0 0 0 3.1 2.5H2.25a3 3 0 0 0-3 3v13.5a3 3 0 0 0 3 3h17.25Z"
+              />
+              <path
+                d="M21.75 12H2.25a.75.75 0 0 1-.75-.75V6a1.5 1.5 0 0 1 1.5-1.5h.85a1.5 1.5 0 0 1 1.06.44l1.25 1.25a3 3 0 0 0 2.12.88H15a1.5 1.5 0 0 1 1.5 1.5v2.25H19.5A1.5 1.5 0 0 1 21 12.75v3a.75.75 0 0 1-.75-.75Z"
+                class="opacity-40"
+              />
+              <path
+                d="M19.5 9.75h-15a1.5 1.5 0 0 0-1.5 1.5v7.5A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75v-7.5a1.5 1.5 0 0 0-1.5-1.5Z"
+              />
+            </svg>
+          </div>
+          <span
+            class="font-outfit text-xl font-bold tracking-tight text-gray-900"
+            >Dad Bills</span
+          >
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav id="nav-tabs" class="flex items-center gap-1.5 bg-gray-100/70 p-1 rounded-full">
+          <button
+            id="btn-upload"
+            onclick="switchTab('upload')"
+            class="px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 bg-white text-brand shadow-sm"
+          >
+            Upload
+          </button>
+          <button
+            id="btn-approve"
+            onclick="switchTab('approve')"
+            class="px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 text-gray-600 hover:text-gray-900"
+          >
+            Approve
+            <span
+              id="approve-count-badge"
+              class="ml-1 bg-brand text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden"
+              >0</span
+            >
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-xl w-full mx-auto px-4 py-8">
+      <!-- TAB 1: UPLOAD VIEW -->
+      <div id="view-upload" class="fade-in">
+        <div class="mb-8">
+          <h1
+            class="font-outfit text-3xl font-bold text-gray-900 tracking-tight mb-2"
+          >
+            Send a Bill
+          </h1>
+          <p class="text-[#7A7A78] text-base leading-relaxed">
+            Enter your name and attach the PDF to send for approval.
+          </p>
+        </div>
+        <!-- Google Drive Connection Alert for Client -->
+        <div id="client-drive-alert" class="bg-white border border-[#E9E9E4] rounded-2xl p-6 shadow-sm hidden space-y-4 mb-5 fade-in">
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center shrink-0">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.008v.008H12v-.008Z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-outfit text-base font-bold text-gray-900">Google Drive Disconnected</h3>
+              <p class="text-xs text-gray-500">Please connect Google Drive to start uploading bills.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onclick="connectGoogleDrive()"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-3.5 px-4 rounded-xl shadow-sm transition-all duration-200 cursor-pointer text-center block"
+          >
+            Connect Google Drive
+          </button>
+        </div>
+
+        <!-- Form Container -->
+        <form id="upload-form" onsubmit="handleUpload(event)" class="space-y-5">
+          <!-- CARD 1: Bill Name Input -->
+          <div
+            class="bg-white border border-[#E9E9E4] rounded-2xl p-6 shadow-sm"
+          >
+            <div class="flex items-center justify-between mb-3">
+              <label
+                for="uploader-name"
+                class="block text-[11px] font-bold tracking-wider text-[#A1A19D] uppercase"
+              >
+                Bill Name
+              </label>
+              <!-- Toggle Control (Date vs Custom Text) -->
+              <div
+                class="flex items-center gap-1 bg-gray-100 p-0.5 rounded-lg text-xs font-semibold text-gray-500"
+              >
+                <button
+                  type="button"
+                  id="toggle-mode-date"
+                  onclick="setBillNameMode('date')"
+                  class="px-2.5 py-1 rounded bg-white text-brand shadow-xs transition-all"
+                >
+                  Date
+                </button>
+                <button
+                  type="button"
+                  id="toggle-mode-text"
+                  onclick="setBillNameMode('text')"
+                  class="px-2.5 py-1 rounded transition-all hover:text-gray-900"
+                >
+                  Text
+                </button>
+              </div>
+            </div>
+            <input
+              type="date"
+              id="uploader-name"
+              required
+              class="w-full bg-[#F4F4F0] border-0 text-[#2C2C2A] text-[15px] font-semibold rounded-xl py-3.5 px-4 focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all"
+            />
+          </div>
+
+          <!-- CARD 1.5: Bill Category Dropdown -->
+          <div
+            class="bg-white border border-[#E9E9E4] rounded-2xl p-6 shadow-sm"
+          >
+            <label
+              for="bill-category"
+              class="block text-[11px] font-bold tracking-wider text-[#A1A19D] uppercase mb-3"
+            >
+              Bill Type / Folder
+            </label>
+            <div class="relative">
+              <select
+                id="bill-category"
+                required
+                onchange="toggleCustomFolderField()"
+                class="w-full bg-[#F4F4F0] border-0 text-[#2C2C2A] text-[15px] font-semibold rounded-xl py-3.5 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all appearance-none cursor-pointer"
+              >
+                <option value="current">Current Bill Receipt</option>
+                <option value="water">Water Bill Receipt</option>
+                <option value="jio">Jio Fiber Recharge</option>
+                <option value="other" selected>Other</option>
+                <option value="custom">📁 Create New Folder...</option>
+              </select>
+              <!-- Dropdown Chevron Icon -->
+              <div
+                class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-500"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="2.5"
+                  stroke="currentColor"
+                  class="w-4 h-4"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="m19.5 8.25-7.5 7.5-7.5-7.5"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 1.7: Custom Folder Input (shown only if 'custom' selected) -->
+          <div
+            id="custom-folder-card"
+            class="bg-white border border-[#E9E9E4] rounded-2xl p-6 shadow-sm hidden fade-in"
+          >
+            <label
+              for="custom-folder-name"
+              class="block text-[11px] font-bold tracking-wider text-[#A1A19D] uppercase mb-3"
+            >
+              New Folder Name
+            </label>
+            <input
+              type="text"
+              id="custom-folder-name"
+              placeholder="e.g. Gas Bill"
+              class="w-full bg-[#F4F4F0] border-0 text-[#2C2C2A] placeholder-[#9E9E9A] text-[15px] font-semibold rounded-xl py-3.5 px-4 focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all"
+            />
+          </div>
+
+          <!-- CARD 2: File Upload Area -->
+          <div
+            class="bg-white border border-[#E9E9E4] rounded-2xl p-6 shadow-sm"
+          >
+            <label
+              class="block text-[11px] font-bold tracking-wider text-[#A1A19D] uppercase mb-3"
+            >
+              File (PDF or Image)
+            </label>
+
+            <!-- Hidden File Input -->
+            <input
+              type="file"
+              id="file-input"
+              accept="application/pdf,image/*"
+              onchange="handleFileSelect(event)"
+              class="hidden"
+            />
+
+            <!-- Interactive Drag Box -->
+            <div
+              id="drag-area"
+              onclick="triggerFileSelect()"
+              class="border border-dashed border-[#D2D2CD] bg-[#FAF9F5] hover:bg-[#F3F2EC] active:bg-[#ECEBE5] transition-colors rounded-xl py-9 px-4 text-center cursor-pointer relative flex flex-col items-center justify-center min-h-[190px]"
+            >
+              <!-- Before File Selected -->
+              <div id="drop-state-empty" class="flex flex-col items-center">
+                <!-- PDF File Icon (Soft purple/blue) -->
+                <div
+                  class="w-14 h-14 bg-violet-50 text-violet-400 rounded-xl flex items-center justify-center mb-4 shadow-sm"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.5"
+                    stroke="currentColor"
+                    class="w-8 h-8"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                    />
+                  </svg>
+                </div>
+                <p class="text-sm font-semibold text-gray-700">
+                  <span class="text-gray-900 font-bold">Click to choose</span>
+                  <span class="text-gray-500 font-normal">or drag & drop</span>
+                </p>
+                <p class="text-xs text-gray-400 mt-1">PDF or Image files only</p>
+              </div>
+
+              <!-- After File Selected -->
+              <div
+                id="drop-state-selected"
+                class="hidden w-full flex flex-col items-center px-4"
+              >
+                <!-- Checkmark PDF Icon -->
+                <div
+                  class="w-14 h-14 bg-brand-light text-brand rounded-xl flex items-center justify-center mb-3 shadow-sm relative"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    class="w-7 h-7"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5-3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                    />
+                  </svg>
+                  <div
+                    class="absolute -bottom-1.5 -right-1.5 bg-brand text-white rounded-full p-0.5 border-2 border-white"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke-width="3"
+                      stroke="currentColor"
+                      class="w-3.5 h-3.5"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="m4.5 12.75 6 6 9-13.5"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <p
+                  id="selected-filename"
+                  class="text-sm font-bold text-gray-900 break-all text-center max-w-xs"
+                ></p>
+                <p
+                  id="selected-filesize"
+                  class="text-xs text-gray-400 mt-0.5"
+                ></p>
+
+                <button
+                  type="button"
+                  onclick="resetFile(event)"
+                  class="mt-4 text-xs font-semibold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100/70 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    class="w-3.5 h-3.5"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+                    />
+                  </svg>
+                  Change File
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button
+            type="submit"
+            id="btn-submit"
+            class="bg-brand hover:bg-brand-hover text-white text-base font-bold py-4 px-6 rounded-xl w-full text-center transition-all duration-200 shadow-md shadow-brand/10 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
+          >
+            Send for Approval
+          </button>
+        </form>
+
+        <!-- Dynamic Success Screen State -->
+        <div
+          id="upload-success-state"
+          class="hidden bg-white border border-[#E9E9E4] rounded-2xl p-8 text-center shadow-sm space-y-6 fade-in"
+        >
+          <div
+            class="w-16 h-16 bg-brand-light text-brand rounded-full flex items-center justify-center mx-auto shadow-sm"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="2.5"
+              stroke="currentColor"
+              class="w-8 h-8"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+              />
+            </svg>
+          </div>
+          <div class="space-y-2">
+            <h3 class="font-outfit text-2xl font-bold text-gray-900">
+              Uploaded Successfully!
+            </h3>
+            <p class="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
+              Your bill has been successfully uploaded to Google Drive.
+            </p>
+          </div>
+          <div
+            class="bg-[#FAF9F5] border border-gray-100 rounded-xl p-4 text-left max-w-sm mx-auto space-y-1.5"
+          >
+            <span
+              class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block"
+              >PENDING BILL</span
+            >
+            <p
+              id="success-display-filename"
+              class="text-sm font-semibold text-gray-800 truncate"
+            ></p>
+            <div class="flex items-center gap-2">
+              <span
+                id="success-display-uploader"
+                class="text-xs text-brand font-semibold"
+              ></span>
+              <span class="text-gray-300 text-[10px]">•</span>
+              <span
+                id="success-display-category"
+                class="text-xs text-gray-500 font-medium"
+              ></span>
+            </div>
+          </div>
+
+          <button
+            onclick="resetUploadForm()"
+            class="bg-brand hover:bg-brand-hover text-white text-sm font-semibold py-3 px-6 rounded-xl transition-colors shadow-sm inline-flex items-center justify-center gap-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+              class="w-4 h-4"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 4.5v15m7.5-7.5h-15"
+              />
+            </svg>
+            Send Another Bill
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB 2: APPROVE VIEW -->
+      <div id="view-approve" class="hidden fade-in space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1
+              class="font-outfit text-3xl font-bold text-gray-900 tracking-tight mb-2"
+            >
+              Pending Bills
+            </h1>
+            <p class="text-[#7A7A78] text-sm">
+              Approve or reject bills waiting to be saved to your laptop.
+            </p>
+          </div>
+
+          <!-- Action Toolbar -->
+          <div class="flex items-center gap-3">
+            <!-- Toggle Auto Check -->
+            <label
+              for="auto-refresh-toggle"
+              class="relative inline-flex items-center cursor-pointer select-none group whitespace-nowrap"
+            >
+              <input
+                type="checkbox"
+                id="auto-refresh-toggle"
+                onchange="toggleAutoPoll(this)"
+                class="sr-only peer"
+              />
+              <!-- Switch Track (relative to circle after: pseudo) -->
+              <div
+                class="relative w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:bg-brand transition-colors duration-200 after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-transform after:duration-200 after:shadow-sm peer-checked:after:translate-x-[16px]"
+              ></div>
+              <span
+                class="ml-2 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                >Auto Check</span
+              >
+            </label>
+
+            <button
+              onclick="fetchPendingList(true)"
+              class="bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 border border-gray-200 rounded-xl p-2.5 flex items-center justify-center gap-1.5 transition-all text-xs font-semibold shadow-sm"
+              title="Refresh List"
+            >
+              <svg
+                id="refresh-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+                stroke="currentColor"
+                class="w-4 h-4"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                />
+              </svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Google Drive Integration Dashboard (Only for Admin) -->
+        <div id="drive-integration-card" class="bg-white border border-[#E9E9E4] rounded-2xl p-6 shadow-sm hidden space-y-4 fade-in">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5 flex-1 min-w-0">
+              <!-- Drive Icon -->
+              <div class="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center shrink-0">
+                <svg class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/>
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <h3 class="font-outfit text-base font-bold text-gray-900">Google Drive Sync</h3>
+                <p id="drive-connection-text" class="text-xs text-gray-500 truncate">Checking connection status...</p>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                id="btn-drive-connect"
+                type="button"
+                onclick="connectGoogleDrive()"
+                class="hidden bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm transition-all duration-200 cursor-pointer"
+              >
+                Connect Drive
+              </button>
+              <button
+                id="btn-drive-sync"
+                type="button"
+                onclick="syncGoogleDrive()"
+                class="hidden bg-brand hover:bg-brand-hover text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm transition-all duration-200 flex items-center gap-1.5 cursor-pointer"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+                Sync Now
+              </button>
+              <button
+                id="btn-drive-disconnect"
+                type="button"
+                onclick="disconnectGoogleDrive()"
+                class="hidden text-gray-500 hover:text-red-600 hover:bg-red-50 font-semibold text-xs py-2.5 px-3 rounded-xl transition-all cursor-pointer"
+              >
+                Disconnect
+              </button>
+            </div>
+          </div>
+          <!-- Sync Logs / Result Drawer -->
+          <div id="drive-sync-logs" class="hidden bg-gray-50 border border-gray-100 rounded-xl p-4 text-xs font-mono text-gray-600 space-y-1.5 max-h-48 overflow-y-auto">
+            <!-- Sync logs populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Pending List Container -->
+        <div id="pending-list" class="space-y-4">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </main>
+
+    <!-- Review PDF Modal (Hidden by default, un-cancellable overlay) -->
+    <div
+      id="review-modal"
+      class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 transition-all duration-300"
+    >
+      <div
+        class="bg-white w-full max-w-4xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden fade-in"
+      >
+        <!-- Modal Header -->
+        <div
+          class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50"
+        >
+          <div class="min-w-0">
+            <h3
+              class="font-outfit text-lg md:text-xl font-bold text-gray-900 flex items-center gap-2"
+            >
+              <span>Reviewing Bill:</span>
+              <span
+                id="modal-uploader-badge"
+                class="bg-brand/10 text-brand text-xs font-bold px-2 py-0.5 rounded-full truncate max-w-[150px] md:max-w-xs"
+              ></span>
+            </h3>
+            <p
+              id="modal-filename"
+              class="text-xs text-gray-500 mt-0.5 truncate max-w-md"
+            ></p>
+          </div>
+          <div class="flex items-center gap-3 shrink-0">
+            <div
+              id="modal-category-badge"
+              class="text-[10px] md:text-xs bg-blue-50 text-blue-600 font-semibold px-2.5 py-1 rounded-full border border-blue-100 flex items-center gap-1"
+            >
+              <!-- Folder Category badge filled dynamically -->
+            </div>
+            <!-- Close Modal Button -->
+            <button
+              type="button"
+              onclick="closeReviewModal()"
+              class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded-full transition-all"
+              title="Close Review"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="2.5"
+                stroke="currentColor"
+                class="w-5 h-5"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M6 18 18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Modal Body (PDF/Image Viewer) -->
+        <div class="flex-grow bg-gray-100 relative flex items-center justify-center overflow-auto p-4">
+          <iframe
+            id="modal-pdf-frame"
+            class="w-full h-full border-0 hidden"
+            src=""
+          ></iframe>
+          <img
+            id="modal-image-preview"
+            class="max-w-full max-h-full object-contain rounded-lg shadow-md hidden"
+            src=""
+            alt="Bill Preview"
+          />
+        </div>
+
+        <!-- Modal Footer -->
+        <div
+          class="px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between bg-white shrink-0 gap-3"
+        >
+          <span class="text-xs text-gray-400 font-semibold"
+            >⚠️ Decide on this bill, or close it using the "✕" button at the
+            top-right.</span
+          >
+          <div class="flex items-center gap-2.5 self-end">
+            <button
+              id="modal-btn-reject"
+              class="text-gray-500 hover:text-red-600 hover:bg-red-50 font-semibold text-sm py-2.5 px-5 rounded-xl transition-all duration-200"
+            >
+              Reject Bill
+            </button>
+            <button
+              id="modal-btn-approve"
+              class="bg-brand hover:bg-brand-hover text-white font-bold text-sm py-2.5 px-6 rounded-xl shadow-md transition-all duration-200 flex items-center gap-1.5"
+            >
+              Approve & Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Offline Overlay -->
+    <div
+      id="offline-overlay"
+      class="hidden fixed inset-0 bg-gray-900/85 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300"
+    >
+      <div
+        class="bg-white max-w-sm w-full rounded-2xl p-8 shadow-2xl space-y-6 text-center fade-in"
+      >
+        <div
+          class="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto animate-bounce"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2.5"
+            stroke="currentColor"
+            class="w-8 h-8"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.008v.008H12v-.008Z"
+            />
+          </svg>
+        </div>
+        <div class="space-y-2">
+          <h3 class="font-outfit text-2xl font-bold text-gray-900">
+            Server Offline
+          </h3>
+          <p class="text-sm text-gray-500 leading-relaxed">
+            The laptop server is not running. Please turn on your laptop and
+            start the server using
+            <code
+              class="bg-gray-100 px-1.5 py-0.5 rounded text-red-600 font-mono text-[11px] font-bold"
+              >run_background.vbs</code
+            >
+            to upload bills.
+          </p>
+        </div>
+        <button
+          id="btn-retry-conn"
+          onclick="checkServerHealth()"
+          class="bg-brand hover:bg-brand-hover text-white text-sm font-bold py-3.5 px-6 rounded-xl w-full transition-all duration-200 flex items-center justify-center gap-2 shadow-md shadow-brand/10 cursor-pointer"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2.5"
+            stroke="currentColor"
+            class="w-4 h-4"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+            />
+          </svg>
+          Retry Connection
+        </button>
+      </div>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div
+      id="toast-container"
+      class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-sm px-4"
+    ></div>
+
+    <!-- Global Javascript Control -->
+    <script>
+      const IS_ADMIN = "{{ 'true' if is_admin else 'false' }}" === "true";
+      let currentTab = "upload";
+      let selectedFile = null;
+      let autoPollTimer = null;
+
+      // Toast Notification System
+      function showToast(message, type = "success") {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+
+        let bgStyle = "bg-white text-gray-800 border-gray-200 shadow-xl";
+        let iconColor = "text-brand";
+        let iconSVG = `
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+      `;
+
+        if (type === "error") {
+          bgStyle = "bg-red-50 text-red-900 border-red-100 shadow-lg";
+          iconColor = "text-red-500";
+          iconSVG = `
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+          </svg>
+        `;
+        } else if (type === "info") {
+          bgStyle = "bg-blue-50 text-blue-900 border-blue-100 shadow-lg";
+          iconColor = "text-blue-500";
+          iconSVG = `
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 0-.512-.073l-.405.12a.75.75 0 0 0-.2.128l-.3.3a.75.75 0 0 0-.173.256l-.1.25a.75.75 0 0 0 .173.743l1.5 1.5a.75.75 0 0 0 1.06 0l3-3a.75.75 0 0 0-1.06-1.06l-2.47 2.47-1.13-1.13v.002Z" />
+          </svg>
+        `;
+        }
+
+        toast.className = `toast-enter flex items-center gap-3 px-4 py-3.5 border rounded-xl ${bgStyle} transition-all duration-300`;
+        toast.innerHTML = `
+        <div class="${iconColor} shrink-0">${iconSVG}</div>
+        <p class="text-sm font-semibold">${message}</p>
+      `;
+
+        container.appendChild(toast);
+
+        // Auto dismiss after 3.5s
+        setTimeout(() => {
+          toast.classList.add("opacity-0", "-translate-y-2");
+          setTimeout(() => {
+            toast.remove();
+          }, 300);
+        }, 3500);
+      }
+
+      // Switch view tabs
+      function switchTab(tab) {
+        if (currentTab === tab) return;
+        currentTab = tab;
+
+        const uploadBtn = document.getElementById("btn-upload");
+        const approveBtn = document.getElementById("btn-approve");
+        const uploadView = document.getElementById("view-upload");
+        const approveView = document.getElementById("view-approve");
+
+        if (tab === "upload") {
+          // Tab buttons styling
+          uploadBtn.className =
+            "px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 bg-white text-brand shadow-sm";
+          approveBtn.className =
+            "px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 text-gray-600 hover:text-gray-900";
+
+          // View visibility
+          uploadView.classList.remove("hidden");
+          approveView.classList.add("hidden");
+
+          closeReviewModal();
+        } else {
+          // Tab buttons styling
+          uploadBtn.className =
+            "px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 text-gray-600 hover:text-gray-900";
+          approveBtn.className =
+            "px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 bg-white text-brand shadow-sm";
+
+          // View visibility
+          uploadView.classList.add("hidden");
+          approveView.classList.remove("hidden");
+
+          // Request notification permission if needed
+          requestNotificationPermission();
+
+          // Initial fetch
+          fetchPendingList(true);
+
+          // Check Google Drive status
+          checkGoogleDriveStatus();
+        }
+      }
+
+      // Trigger input file dialog
+      function triggerFileSelect() {
+        if (!selectedFile) {
+          document.getElementById("file-input").click();
+        }
+      }
+
+      // Handle standard file selection
+      function handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+        const isImage = (file.type.startsWith("image/") && file.type !== "image/gif") || /\.(jpe?g|png|webp)$/i.test(file.name);
+        if (!isPdf && !isImage) {
+          showToast("Please select a valid PDF or image file.", "error");
+          resetFile(e);
+          return;
+        }
+
+        selectedFile = file;
+
+        // Update UI elements
+        document.getElementById("selected-filename").textContent = file.name;
+        document.getElementById("selected-filesize").textContent = formatBytes(
+          file.size,
+        );
+
+        document.getElementById("drop-state-empty").classList.add("hidden");
+        document
+          .getElementById("drop-state-selected")
+          .classList.remove("hidden");
+      }
+
+      // Clear file selection
+      function resetFile(e) {
+        if (e) e.stopPropagation();
+        selectedFile = null;
+        document.getElementById("file-input").value = "";
+        document.getElementById("drop-state-empty").classList.remove("hidden");
+        document.getElementById("drop-state-selected").classList.add("hidden");
+      }
+
+      // Format bytes to readable size
+      function formatBytes(bytes) {
+        if (bytes === 0) return "0 Bytes";
+        const k = 1024;
+        const sizes = ["Bytes", "KB", "MB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+      }
+
+      // Drag and Drop operations
+      const dragArea = document.getElementById("drag-area");
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dragArea.addEventListener(
+          eventName,
+          (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!selectedFile) {
+              dragArea.classList.add("bg-[#ECEBE5]", "border-brand/40");
+            }
+          },
+          false,
+        );
+      });
+
+      ["dragleave", "drop"].forEach((eventName) => {
+        dragArea.addEventListener(
+          eventName,
+          (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dragArea.classList.remove("bg-[#ECEBE5]", "border-brand/40");
+          },
+          false,
+        );
+      });
+
+      dragArea.addEventListener("drop", (e) => {
+        const dt = e.dataTransfer;
+        const file = dt.files[0];
+        if (!file) return;
+
+        const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+        const isImage = (file.type.startsWith("image/") && file.type !== "image/gif") || /\.(jpe?g|png|webp)$/i.test(file.name);
+        if (!isPdf && !isImage) {
+          showToast("Please drop a valid PDF or image file.", "error");
+          return;
+        }
+
+        selectedFile = file;
+        document.getElementById("file-input").files = dt.files;
+
+        document.getElementById("selected-filename").textContent = file.name;
+        document.getElementById("selected-filesize").textContent = formatBytes(
+          file.size,
+        );
+
+        document.getElementById("drop-state-empty").classList.add("hidden");
+        document
+          .getElementById("drop-state-selected")
+          .classList.remove("hidden");
+      });
+
+      let billNameMode = "date";
+
+      // Toggle between Date picker and Custom Text field for Bill Name
+      function setBillNameMode(mode) {
+        billNameMode = mode;
+        const dateBtn = document.getElementById("toggle-mode-date");
+        const textBtn = document.getElementById("toggle-mode-text");
+        const input = document.getElementById("uploader-name");
+
+        if (mode === "date") {
+          dateBtn.className =
+            "px-2.5 py-1 rounded bg-white text-brand shadow-xs transition-all";
+          textBtn.className =
+            "px-2.5 py-1 rounded transition-all hover:text-gray-900";
+          input.type = "date";
+          input.placeholder = "";
+
+          // Prefill with today's date formatted as YYYY-MM-DD
+          const today = new Date();
+          const yyyy = today.getFullYear();
+          let mm = today.getMonth() + 1;
+          let dd = today.getDate();
+          if (dd < 10) dd = "0" + dd;
+          if (mm < 10) mm = "0" + mm;
+          input.value = yyyy + "-" + mm + "-" + dd;
+        } else {
+          dateBtn.className =
+            "px-2.5 py-1 rounded transition-all hover:text-gray-900";
+          textBtn.className =
+            "px-2.5 py-1 rounded bg-white text-brand shadow-xs transition-all";
+          input.type = "text";
+          input.placeholder = "e.g. Electricity Bill";
+          input.value = "";
+          input.focus();
+        }
+      }
+
+      // Toggle visibility of Custom Folder text input
+      function toggleCustomFolderField() {
+        const category = document.getElementById("bill-category").value;
+        const customCard = document.getElementById("custom-folder-card");
+        const customInput = document.getElementById("custom-folder-name");
+
+        if (category === "custom") {
+          customCard.classList.remove("hidden");
+          customInput.required = true;
+          customInput.focus();
+        } else {
+          customCard.classList.add("hidden");
+          customInput.required = false;
+          customInput.value = "";
+        }
+      }
+
+      // Handle Upload Request
+      function handleUpload(event) {
+        event.preventDefault();
+
+        const nameInput = document.getElementById("uploader-name");
+        let name = nameInput.value.trim();
+
+        // If in date mode, format the date to look nicer in the filename (DD-MM-YYYY)
+        if (billNameMode === "date" && name) {
+          const parts = name.split("-");
+          if (parts.length === 3) {
+            name = `${parts[2]}-${parts[1]}-${parts[0]}`; // DD-MM-YYYY
+          }
+        }
+
+        const categoryInput = document.getElementById("bill-category");
+        const category = categoryInput.value;
+
+        let customFolder = "";
+        if (category === "custom") {
+          const customFolderInput =
+            document.getElementById("custom-folder-name");
+          customFolder = customFolderInput.value.trim();
+          if (!customFolder) {
+            showToast("Please specify the new folder name.", "error");
+            return;
+          }
+        }
+
+        if (!name) {
+          showToast("Please enter the bill name or date.", "error");
+          return;
+        }
+
+        if (!selectedFile) {
+          showToast("Please attach a PDF or image file to send.", "error");
+          return;
+        }
+
+        const btnSubmit = document.getElementById("btn-submit");
+        const originalText = btnSubmit.innerHTML;
+
+        // Loading State on button
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Sending...
+      `;
+
+        const formData = new FormData();
+        formData.append("name", name);
+        formData.append("category", category);
+        formData.append("custom_folder", customFolder);
+        formData.append("pdf", selectedFile);
+
+        fetch("/upload", {
+          method: "POST",
+          body: formData,
+        })
+          .then((res) => {
+            if (!res.ok) {
+              return res.json().then((err) => {
+                throw new Error(err.error || "Server error");
+              });
+            }
+            return res.json();
+          })
+          .then((data) => {
+            showToast("Bill sent successfully! 🎉", "success");
+
+            // Show Success screen state
+            document.getElementById("upload-form").classList.add("hidden");
+            document.getElementById("success-display-filename").textContent =
+              selectedFile.name;
+            document.getElementById("success-display-uploader").textContent =
+              `Name: ${name}`;
+
+            const categoryMap = {
+              current: "Current Bill",
+              water: "Water Bill Receipt",
+              jio: "Jio Fiber",
+              other: "Other",
+            };
+            const folderLabel =
+              category === "custom"
+                ? customFolder
+                : categoryMap[category] || "Other";
+            document.getElementById("success-display-category").textContent =
+              `📁 ${folderLabel}`;
+            document
+              .getElementById("upload-success-state")
+              .classList.remove("hidden");
+
+            // Query server count badge in background
+            checkPendingCountBadge();
+          })
+          .catch((error) => {
+            showToast(error.message || "Failed to upload bill.", "error");
+          })
+          .finally(() => {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = originalText;
+          });
+      }
+
+      // Reset Form to upload state
+      function resetUploadForm() {
+        document.getElementById("upload-form").classList.remove("hidden");
+        document.getElementById("upload-success-state").classList.add("hidden");
+        document.getElementById("bill-category").value = "other";
+        document.getElementById("custom-folder-card").classList.add("hidden");
+        document.getElementById("custom-folder-name").value = "";
+        setBillNameMode("date"); // Reset back to default prefilled date
+        resetFile();
+      }
+
+      let lastPendingData = [];
+      let currentReviewingId = null;
+      let isFirstPendingFetch = true;
+
+      // Fetch Pending List
+      function fetchPendingList(showSpinner = false) {
+        if (isOffline) return; // Stop active fetching if server is offline
+        const container = document.getElementById("pending-list");
+        const refreshIcon = document.getElementById("refresh-icon");
+
+        if (showSpinner) {
+          if (refreshIcon) refreshIcon.classList.add("animate-spin");
+          if (container.children.length === 0) {
+            container.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-12 text-gray-400">
+              <svg class="animate-spin h-8 w-8 text-brand/60 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <p class="text-xs font-semibold">Checking for bills...</p>
+            </div>
+          `;
+          }
+        }
+
+        fetch("/pending")
+          .then((res) => res.json())
+          .then((data) => {
+            updateBadge(data.length);
+
+            if (data.length === 0) {
+              closeReviewModal();
+              isFirstPendingFetch = false;
+              // Check if we are already showing the empty state and it has no spinner, to avoid re-rendering
+              if (
+                lastPendingData.length === 0 &&
+                container.children.length > 0 &&
+                !container.querySelector(".animate-spin")
+              ) {
+                return;
+              }
+              container.innerHTML = `
+            <div class="bg-white border border-[#E9E9E4] rounded-2xl p-10 text-center shadow-sm space-y-4 fade-in">
+              <div class="w-16 h-16 bg-[#F9F9F7] text-gray-300 rounded-full flex items-center justify-center mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+                </svg>
+              </div>
+              <div class="space-y-1">
+                <h4 class="font-outfit font-bold text-gray-800 text-lg">All caught up!</h4>
+                <p class="text-sm text-gray-400">No pending bills to review at the moment.</p>
+              </div>
+            </div>
+          `;
+              lastPendingData = [];
+              return;
+            }
+
+            // We no longer auto-open the modal here, so the user can see all pending bills in the list and click "Review" to open them.
+
+            // Send desktop notifications for newly arrived items (only for Admin and after the first fetch)
+            if (IS_ADMIN && !isFirstPendingFetch) {
+              const oldIds = lastPendingData.map((item) => item.id);
+              const newItems = data.filter((item) => !oldIds.includes(item.id));
+
+              newItems.forEach((item) => {
+                if (
+                  window.Notification &&
+                  Notification.permission === "granted"
+                ) {
+                  const categoryLabel = getCategoryLabel(
+                    item.category,
+                    item.custom_folder,
+                  );
+                  const notification = new Notification(
+                    `New Bill from ${item.name}! 📁`,
+                    {
+                      body: `${item.filename}\nFolder: ${categoryLabel}`,
+                      requireInteraction: true,
+                    },
+                  );
+                  notification.onclick = () => {
+                    window.focus();
+                    switchTab("approve");
+                    openReviewModal(
+                      item.id,
+                      item.name,
+                      item.filename,
+                      item.category,
+                      item.custom_folder,
+                    );
+                  };
+                }
+              });
+            }
+
+            isFirstPendingFetch = false;
+
+            const currentIds = data.map((item) => item.id).join(",");
+            const lastIds = lastPendingData.map((item) => item.id).join(",");
+
+            // Prevent list DOM re-rendering if IDs are identical
+            if (currentIds === lastIds) {
+              return;
+            }
+
+            lastPendingData = data;
+
+            let html = "";
+            data.forEach((item) => {
+              // Escape single quotes for safe JS inline string args
+              const safeName = item.name.replace(/'/g, "\\'");
+              const safeFilename = item.filename.replace(/'/g, "\\'");
+              const safeCustomFolder = (item.custom_folder || "").replace(
+                /'/g,
+                "\\'",
+              );
+
+              const isImg = /\.(jpe?g|png|webp)$/i.test(item.filename);
+            const iconHTML = isImg 
+              ? `<!-- Image Thumbnail/Icon in soft emerald -->
+              <div class="w-11 h-11 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                </svg>
+              </div>`
+              : `<!-- PDF Thumbnail/Icon in soft red -->
+              <div class="w-11 h-11 bg-red-50 text-red-500 rounded-xl flex items-center justify-center shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+              </div>`;
+
+            html += `
+            <div id="bill-${item.id}" class="bg-white border border-[#E9E9E4] rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 fade-in">
+              <div class="flex items-start gap-3.5 min-w-0">
+                ${iconHTML}
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-sm font-bold text-gray-900">${escapeHTML(item.name)}</span>
+                    <span class="text-[10px] bg-amber-50 text-amber-600 font-semibold px-2 py-0.5 rounded-full border border-amber-100">Pending Approval</span>
+                    <span class="text-[10px] bg-blue-50 text-blue-600 font-semibold px-2 py-0.5 rounded-full border border-blue-100 flex items-center gap-0.5">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3 h-3">
+                        <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                      </svg>
+                      ${getCategoryLabel(item.category, item.custom_folder)}
+                    </span>
+                  </div>
+                  <p class="text-sm text-gray-500 truncate max-w-xs md:max-w-md mt-1.5" title="${escapeHTML(item.filename)}">
+                    ${escapeHTML(item.filename)}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Action button tray (Only shown to Admin) -->
+              ${
+                IS_ADMIN
+                  ? `
+              <div class="flex items-center justify-end gap-2.5 shrink-0 border-t border-gray-50 pt-3 md:pt-0 md:border-0">
+                <button 
+                  onclick="decideBill('${item.id}', 'reject')" 
+                  class="text-gray-500 hover:text-red-600 hover:bg-red-50 font-semibold text-sm py-2.5 px-4 rounded-xl transition-all duration-200"
+                >
+                  Reject
+                </button>
+                <button 
+                  onclick="openReviewModal('${item.id}', '${safeName}', '${safeFilename}', '${item.category}', '${safeCustomFolder}')" 
+                  class="bg-brand hover:bg-brand-hover text-white font-bold text-sm py-2.5 px-5 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-center gap-1.5"
+                >
+                  Review
+                </button>
+              </div>
+              `
+                  : `
+              <div class="flex items-center justify-end gap-1.5 shrink-0 border-t border-gray-50 pt-3 md:pt-0 md:border-0 text-[#A1A19D] text-xs font-bold uppercase tracking-wider bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                ⏳ Waiting for Admin
+              </div>
+              `
+              }
+            </div>
+          `;
+            });
+            container.innerHTML = html;
+          })
+          .catch((err) => {
+            if (!isOffline) {
+              showToast("Error listing pending bills.", "error");
+            }
+          })
+          .finally(() => {
+            if (refreshIcon) refreshIcon.classList.remove("animate-spin");
+          });
+      }
+
+      // Open review modal with PDF/Image preview loading
+      function openReviewModal(fileId, name, filename, category, customFolder) {
+        currentReviewingId = fileId;
+
+        const modal = document.getElementById("review-modal");
+        const uploaderBadge = document.getElementById("modal-uploader-badge");
+        const modalFilename = document.getElementById("modal-filename");
+        const categoryBadge = document.getElementById("modal-category-badge");
+        const frame = document.getElementById("modal-pdf-frame");
+        const imgPreview = document.getElementById("modal-image-preview");
+
+        // Re-enable modal buttons to ensure they are clickable on new load
+        const modalAppBtn = document.getElementById("modal-btn-approve");
+        const modalRejBtn = document.getElementById("modal-btn-reject");
+        if (modalAppBtn) modalAppBtn.disabled = false;
+        if (modalRejBtn) modalRejBtn.disabled = false;
+
+        uploaderBadge.textContent = name;
+        modalFilename.textContent = filename;
+
+        const categoryLabel = getCategoryLabel(category, customFolder);
+        categoryBadge.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+        </svg>
+        ${categoryLabel}
+      `;
+
+        // Check if filename is an image
+        const isImage = /\.(jpe?g|png|webp)$/i.test(filename);
+        if (isImage) {
+          frame.classList.add("hidden");
+          frame.src = "";
+          imgPreview.src = `/view/${fileId}`;
+          imgPreview.classList.remove("hidden");
+        } else {
+          imgPreview.classList.add("hidden");
+          imgPreview.src = "";
+          frame.src = `/view/${fileId}`;
+          frame.classList.remove("hidden");
+        }
+
+        // Hook approve/reject inside modal
+        document.getElementById("modal-btn-approve").onclick = () => {
+          decideBill(fileId, "approve");
+        };
+        document.getElementById("modal-btn-reject").onclick = () => {
+          decideBill(fileId, "reject");
+        };
+
+        modal.classList.remove("hidden");
+      }
+
+      // Close review modal
+      function closeReviewModal() {
+        const modal = document.getElementById("review-modal");
+        const frame = document.getElementById("modal-pdf-frame");
+        const imgPreview = document.getElementById("modal-image-preview");
+        if (modal) modal.classList.add("hidden");
+        if (frame) {
+          frame.src = "";
+          frame.classList.add("hidden");
+        }
+        if (imgPreview) {
+          imgPreview.src = "";
+          imgPreview.classList.add("hidden");
+        }
+        currentReviewingId = null;
+
+        // Re-enable modal buttons upon closing
+        const modalAppBtn = document.getElementById("modal-btn-approve");
+        const modalRejBtn = document.getElementById("modal-btn-reject");
+        if (modalAppBtn) modalAppBtn.disabled = false;
+        if (modalRejBtn) modalRejBtn.disabled = false;
+      }
+
+      // Helper to translate key to human label
+      function getCategoryLabel(cat, customFolder) {
+        if (cat === "custom" && customFolder) {
+          return customFolder;
+        }
+        const map = {
+          current: "Current Bill",
+          water: "Water Bill Receipt",
+          jio: "Jio Fiber",
+          other: "Other",
+        };
+        return map[cat] || "Other";
+      }
+
+      // Decide (Approve / Reject) Action
+      function decideBill(fileId, action) {
+        const card = document.getElementById(`bill-${fileId}`);
+
+        // Disable modal buttons inside view to prevent double submit
+        const modalAppBtn = document.getElementById("modal-btn-approve");
+        const modalRejBtn = document.getElementById("modal-btn-reject");
+        if (modalAppBtn) modalAppBtn.disabled = true;
+        if (modalRejBtn) modalRejBtn.disabled = true;
+
+        if (card) {
+          const buttons = card.querySelectorAll("button");
+          buttons.forEach((btn) => (btn.disabled = true));
+        }
+
+        fetch(`/decide/${fileId}/${action}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.error) {
+              throw new Error(data.error);
+            }
+
+            if (action === "approve") {
+              let folderName = "Bills";
+              if (data.path) {
+                const separator = data.path.includes("\\") ? "\\" : "/";
+                const parts = data.path.split(separator);
+                if (parts.length > 2) {
+                  folderName = parts[parts.length - 2];
+                }
+              }
+              showToast(
+                `Approved! Saved to "${folderName}" folder. 📁`,
+                "success",
+              );
+            } else {
+              showToast("Bill rejected.", "info");
+            }
+
+            // Close modal if decided
+            if (currentReviewingId === fileId) {
+              closeReviewModal();
+            }
+
+            // Animated remove from list card
+            if (card) {
+              card.classList.add("opacity-0", "scale-95");
+              setTimeout(() => {
+                card.remove();
+                fetchPendingList(false);
+              }, 300);
+            } else {
+              fetchPendingList(false);
+            }
+          })
+          .catch((err) => {
+            showToast(err.message || "Failed to complete action.", "error");
+            const modalAppBtn = document.getElementById("modal-btn-approve");
+            const modalRejBtn = document.getElementById("modal-btn-reject");
+            if (modalAppBtn) modalAppBtn.disabled = false;
+            if (modalRejBtn) modalRejBtn.disabled = false;
+            if (card) {
+              const buttons = card.querySelectorAll("button");
+              buttons.forEach((btn) => (btn.disabled = false));
+            }
+          });
+      }
+
+      // Helper: Escapes HTML tags
+      function escapeHTML(str) {
+        return str.replace(
+          /[&<>'"]/g,
+          (tag) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              "'": "&#39;",
+              '"': "&quot;",
+            })[tag] || tag,
+        );
+      }
+
+      // Badge indicator on Approve tab
+      function updateBadge(count) {
+        const badge = document.getElementById("approve-count-badge");
+        if (count > 0) {
+          badge.textContent = count;
+          badge.classList.remove("hidden");
+        } else {
+          badge.classList.add("hidden");
+        }
+      }
+
+      // Background count checker (when in upload view)
+      function checkPendingCountBadge() {
+        fetch("/pending")
+          .then((res) => res.json())
+          .then((data) => {
+            updateBadge(data.length);
+          })
+          .catch(() => {});
+      }
+
+      // Request HTML5 Desktop Notification permission
+      function requestNotificationPermission() {
+        if (!("Notification" in window)) {
+          return;
+        }
+
+        if (Notification.permission === "default") {
+          Notification.requestPermission().then((permission) => {
+            if (permission === "granted") {
+              showToast("Desktop notifications enabled! 🔔", "success");
+              new Notification("Dad Bills", {
+                body: "You will now receive desktop alerts for new bills! 📁",
+                silent: false,
+              });
+            }
+          });
+        }
+      }
+
+      // Toggle auto polling
+      function toggleAutoPoll(checkbox) {
+        if (checkbox.checked) {
+          localStorage.setItem("autoCheck", "true");
+          requestNotificationPermission();
+          startPolling();
+          showToast("Auto check enabled (checking every 5s) 🔄", "info");
+        } else {
+          localStorage.setItem("autoCheck", "false");
+          stopPolling();
+          showToast("Auto check disabled ⏹️", "info");
+        }
+      }
+
+      // Auto Polling Setup
+      function startPolling() {
+        if (autoPollTimer) clearInterval(autoPollTimer);
+        autoPollTimer = setInterval(() => {
+          fetchPendingList(false);
+        }, 5000); // gentler 5s interval
+      }
+
+      function stopPolling() {
+        if (autoPollTimer) {
+          clearInterval(autoPollTimer);
+          autoPollTimer = null;
+        }
+      }
+
+
+      // Document Ready: Check badges and initialize preferences on load
+      window.addEventListener("DOMContentLoaded", () => {
+        // Hide navigation tabs for both roles since each only has one role-specific screen
+        const navTabs = document.getElementById("nav-tabs");
+        if (navTabs) {
+          navTabs.classList.add("hidden");
+        }
+
+        if (IS_ADMIN) {
+          // Admin View: Force to the approve/pending list view, hiding the upload view
+          currentTab = "approve";
+          document.getElementById("view-upload").classList.add("hidden");
+          document.getElementById("view-approve").classList.remove("hidden");
+
+          // Run Admin setup operations
+          checkPendingCountBadge();
+          requestNotificationPermission();
+          checkGoogleDriveStatus();
+
+          // Load Auto Check state from localStorage
+          const autoRefreshToggle = document.getElementById(
+            "auto-refresh-toggle",
+          );
+          const savedAutoCheck = localStorage.getItem("autoCheck");
+
+          if (savedAutoCheck === "true") {
+            if (autoRefreshToggle) autoRefreshToggle.checked = true;
+            startPolling();
+          } else if (savedAutoCheck === null) {
+            // Default Auto Check to ON for desktop viewports
+            if (window.innerWidth >= 768) {
+              if (autoRefreshToggle) autoRefreshToggle.checked = true;
+              localStorage.setItem("autoCheck", "true");
+              startPolling();
+            } else {
+              if (autoRefreshToggle) autoRefreshToggle.checked = false;
+              localStorage.setItem("autoCheck", "false");
+            }
+          }
+        } else {
+          // Client View: Force to the upload view
+          currentTab = "upload";
+          document.getElementById("view-upload").classList.remove("hidden");
+          document.getElementById("view-approve").classList.add("hidden");
+          setBillNameMode("date"); // Prefill today's date
+        }
+
+        // Initial heartbeat check on load
+        checkServerHealth();
+
+        // Check for Google Drive OAuth success redirect param
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('drive_connected') === 'true') {
+          showToast("Google Drive connected successfully! 🎉", "success");
+          // Clean query params from URL
+          const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+          window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+        }
+        
+        // Check Drive connection status
+        checkGoogleDriveStatus();
+      });
+
+      // Heartbeat check to monitor server connection
+      let isOffline = false;
+      function checkServerHealth() {
+        const retryBtn = document.getElementById("btn-retry-conn");
+        let originalText = "";
+        if (retryBtn) {
+          originalText = retryBtn.innerHTML;
+          retryBtn.disabled = true;
+          retryBtn.innerHTML = `
+          <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Connecting...
+        `;
+        }
+
+        fetch("/pending")
+          .then((res) => {
+            if (!res.ok) throw new Error();
+            if (isOffline) {
+              isOffline = false;
+              stopHeartbeat(); // No longer need reconnection checks
+              document
+                .getElementById("offline-overlay")
+                .classList.add("hidden");
+              showToast("Connected back to server! 🟢", "success");
+              // Resume auto-polling if the toggle is on
+              const toggle = document.getElementById("auto-refresh-toggle");
+              if (toggle && toggle.checked) startPolling();
+            }
+          })
+          .catch(() => {
+            if (!isOffline) {
+              isOffline = true;
+              stopPolling(); // Kill all auto-polling immediately
+              document
+                .getElementById("offline-overlay")
+                .classList.remove("hidden");
+              showToast("Connection to server lost. ⚠️", "error");
+              startHeartbeat(); // Begin reconnection polling
+            }
+          })
+          .finally(() => {
+            if (retryBtn) {
+              retryBtn.disabled = false;
+              retryBtn.innerHTML = originalText;
+            }
+          });
+      }
+
+      // Heartbeat timer - only a single periodic check for reconnection
+      let heartbeatTimer = null;
+
+      function startHeartbeat() {
+        if (heartbeatTimer) return; // already running
+        heartbeatTimer = setInterval(() => {
+          fetch("/pending", { method: "HEAD" })
+            .then((res) => {
+              if (!res.ok) throw new Error();
+              if (isOffline) {
+                isOffline = false;
+                document
+                  .getElementById("offline-overlay")
+                  .classList.add("hidden");
+                showToast("Connected back to server! 🟢", "success");
+                // Resume auto-polling if the toggle is on
+                const toggle = document.getElementById("auto-refresh-toggle");
+                if (toggle && toggle.checked) startPolling();
+                stopHeartbeat();
+              }
+            })
+            .catch(() => {
+              // still offline, keep waiting silently
+            });
+        }, 5000);
+      }
+
+      function stopHeartbeat() {
+        if (heartbeatTimer) {
+          clearInterval(heartbeatTimer);
+          heartbeatTimer = null;
+        }
+      }
+
+      // Google Drive Sync Operations
+      function connectGoogleDrive() {
+        window.location.href = "/oauth/connect";
+      }
+
+      function checkGoogleDriveStatus() {
+        const card = document.getElementById("drive-integration-card");
+        const connText = document.getElementById("drive-connection-text");
+        const btnConnect = document.getElementById("btn-drive-connect");
+        const btnSync = document.getElementById("btn-drive-sync");
+        const btnDisconnect = document.getElementById("btn-drive-disconnect");
+
+        const clientAlert = document.getElementById("client-drive-alert");
+        const uploadForm = document.getElementById("upload-form");
+
+        if (IS_ADMIN && card) card.classList.remove("hidden");
+
+        fetch("/oauth/status")
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.connected) {
+              if (IS_ADMIN) {
+                if (connText) connText.innerHTML = `Connected to Drive (<span class="font-semibold text-blue-600 truncate max-w-[150px] inline-block align-bottom">${escapeHTML(data.email)}</span>)`;
+                if (btnConnect) btnConnect.classList.add("hidden");
+                if (btnSync) btnSync.classList.remove("hidden");
+                if (btnDisconnect) btnDisconnect.classList.remove("hidden");
+              } else {
+                if (clientAlert) clientAlert.classList.add("hidden");
+                if (uploadForm) uploadForm.classList.remove("hidden");
+              }
+            } else {
+              if (IS_ADMIN) {
+                if (connText) connText.innerHTML = `<span class="text-amber-600 font-medium">Not connected. Please connect Google Drive.</span>`;
+                if (btnConnect) btnConnect.classList.remove("hidden");
+                if (btnSync) btnSync.classList.add("hidden");
+                if (btnDisconnect) btnDisconnect.classList.add("hidden");
+              } else {
+                if (clientAlert) clientAlert.classList.remove("hidden");
+                if (uploadForm) uploadForm.classList.add("hidden");
+              }
+            }
+          })
+          .catch(() => {
+            if (IS_ADMIN && connText) {
+              connText.innerHTML = `<span class="text-red-500 font-medium">Failed to fetch Drive status</span>`;
+            }
+          });
+      }
+
+      function disconnectGoogleDrive() {
+        if (!confirm("Are you sure you want to disconnect Google Drive? New uploads will be pending local approval.")) return;
+        
+        fetch("/oauth/disconnect")
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.status === "disconnected") {
+              showToast("Google Drive disconnected", "info");
+              checkGoogleDriveStatus();
+            } else {
+              showToast("Failed to disconnect", "error");
+            }
+          })
+          .catch(() => {
+            showToast("Failed to disconnect", "error");
+          });
+      }
+
+      function syncGoogleDrive() {
+        const btnSync = document.getElementById("btn-drive-sync");
+        const logsDiv = document.getElementById("drive-sync-logs");
+        if (!btnSync) return;
+        const originalHTML = btnSync.innerHTML;
+
+        btnSync.disabled = true;
+        btnSync.innerHTML = `
+          <svg class="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Syncing...
+        `;
+
+        if (logsDiv) {
+          logsDiv.classList.remove("hidden");
+          logsDiv.innerHTML = `<div class="text-blue-500 font-bold">🔄 Checking Google Drive sync...</div>`;
+        }
+
+        fetch("/sync-drive")
+          .then((res) => {
+            if (!res.ok) {
+              return res.json().then((err) => { throw new Error(err.error || "Sync failed"); });
+            }
+            return res.json();
+          })
+          .then((data) => {
+            if (data.status === "success") {
+              const synced = data.synced || [];
+              if (synced.length === 0) {
+                if (logsDiv) logsDiv.innerHTML = `<div class="text-amber-600 font-bold">☁️ No new bills found on Google Drive.</div>`;
+                showToast("No new bills to sync from Google Drive.", "info");
+              } else {
+                let html = `<div class="text-green-600 font-bold mb-1">🎉 Sync finished successfully! Synced ${synced.length} files:</div>`;
+                synced.forEach((f) => {
+                  html += `<div class="pl-2 text-gray-700">🟢 [Saved] <span class="font-bold text-gray-900">${escapeHTML(f.filename)}</span> ➔ folder <span class="font-bold text-gray-900">${escapeHTML(f.folder)}</span></div>`;
+                });
+                if (logsDiv) logsDiv.innerHTML = html;
+                showToast(`Successfully synced ${synced.length} bills! 🎉`, "success");
+              }
+            } else {
+              throw new Error("Unknown error");
+            }
+          })
+          .catch((err) => {
+            if (logsDiv) logsDiv.innerHTML = `<div class="text-red-500 font-bold">❌ Error during sync: ${escapeHTML(err.message)}</div>`;
+            showToast(err.message || "Failed to sync Google Drive", "error");
+          })
+          .finally(() => {
+            btnSync.disabled = false;
+            btnSync.innerHTML = originalHTML;
+          });
+      }
+    </script>
+  </body>
+</html>
