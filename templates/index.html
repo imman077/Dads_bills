@@ -140,11 +140,11 @@
             Send a Bill
           </h1>
           <p class="text-[#7A7A78] text-base leading-relaxed">
-            Enter your name and attach the PDF to send for approval.
+            Enter your name and attach a PDF or image to upload to Google Drive.
           </p>
         </div>
         <!-- Google Drive Connection Alert for Client -->
-        <div id="client-drive-alert" class="bg-white border border-[#E9E9E4] rounded-2xl p-6 shadow-sm hidden space-y-4 mb-5 fade-in">
+        <div id="client-drive-alert" class="bg-white border border-[#E9E9E4] rounded-2xl p-6 shadow-sm {% if drive_connected %}hidden{% endif %} space-y-4 mb-5 fade-in">
           <div class="flex items-center gap-3.5">
             <div class="w-12 h-12 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center shrink-0">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -166,7 +166,28 @@
         </div>
 
         <!-- Form Container -->
-        <form id="upload-form" onsubmit="handleUpload(event)" class="space-y-5">
+        <form id="upload-form" onsubmit="handleUpload(event)" class="space-y-5 {% if not drive_connected %}hidden{% endif %}">
+          <!-- Google Drive Connection Status Badge -->
+          <div id="client-drive-status" class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center justify-between shadow-sm fade-in {% if not drive_connected %}hidden{% endif %}">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center shrink-0 shadow-sm animate-pulse">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <p class="text-xs font-bold text-emerald-800 uppercase tracking-wider">Drive Connected</p>
+                <p id="client-drive-email" class="text-xs text-emerald-600 truncate font-semibold">Loading account...</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onclick="disconnectGoogleDrive()"
+              class="text-xs font-bold text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-2 rounded-xl transition-all duration-200 cursor-pointer"
+            >
+              Disconnect
+            </button>
+          </div>
           <!-- CARD 1: Bill Name Input -->
           <div
             class="bg-white border border-[#E9E9E4] rounded-2xl p-6 shadow-sm"
@@ -407,7 +428,7 @@
             id="btn-submit"
             class="bg-brand hover:bg-brand-hover text-white text-base font-bold py-4 px-6 rounded-xl w-full text-center transition-all duration-200 shadow-md shadow-brand/10 active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
           >
-            Send for Approval
+            Upload to Drive
           </button>
         </form>
 
@@ -1654,21 +1675,19 @@
           const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
           window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
           
-          // Immediately show the upload form — we know Drive is connected
-          // because we just returned from the OAuth flow
+          // Immediately show the upload form and status badge
           if (!IS_ADMIN) {
             const clientAlert = document.getElementById("client-drive-alert");
             const uploadForm = document.getElementById("upload-form");
+            const clientStatus = document.getElementById("client-drive-status");
             if (clientAlert) clientAlert.classList.add("hidden");
             if (uploadForm) uploadForm.classList.remove("hidden");
+            if (clientStatus) clientStatus.classList.remove("hidden");
           }
         }
         
-        // Only check Drive status if we didn't just connect — otherwise the
-        // async Firestore read may return stale data and hide the form again
-        if (!justConnected) {
-          checkGoogleDriveStatus();
-        }
+        // Check Drive status and populate email
+        checkGoogleDriveStatus(justConnected);
       });
 
       // Heartbeat check to monitor server connection
@@ -1761,7 +1780,7 @@
         window.location.href = "/oauth/connect";
       }
 
-      function checkGoogleDriveStatus() {
+      function checkGoogleDriveStatus(justConnected = false) {
         const card = document.getElementById("drive-integration-card");
         const connText = document.getElementById("drive-connection-text");
         const btnConnect = document.getElementById("btn-drive-connect");
@@ -1770,6 +1789,8 @@
 
         const clientAlert = document.getElementById("client-drive-alert");
         const uploadForm = document.getElementById("upload-form");
+        const clientStatus = document.getElementById("client-drive-status");
+        const clientEmail = document.getElementById("client-drive-email");
 
         if (IS_ADMIN && card) card.classList.remove("hidden");
 
@@ -1785,8 +1806,14 @@
               } else {
                 if (clientAlert) clientAlert.classList.add("hidden");
                 if (uploadForm) uploadForm.classList.remove("hidden");
+                if (clientStatus) clientStatus.classList.remove("hidden");
+                if (clientEmail) clientEmail.textContent = data.email || "Connected Account";
               }
             } else {
+              if (justConnected) {
+                // Ignore stale disconnected state from replication delay if we just went through OAuth flow
+                return;
+              }
               if (IS_ADMIN) {
                 if (connText) connText.innerHTML = `<span class="text-amber-600 font-medium">Not connected. Please connect Google Drive.</span>`;
                 if (btnConnect) btnConnect.classList.remove("hidden");
@@ -1795,6 +1822,7 @@
               } else {
                 if (clientAlert) clientAlert.classList.remove("hidden");
                 if (uploadForm) uploadForm.classList.add("hidden");
+                if (clientStatus) clientStatus.classList.add("hidden");
               }
             }
           })

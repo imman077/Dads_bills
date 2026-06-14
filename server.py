@@ -27,17 +27,20 @@ SUBFOLDERS = {
 
 @app.route("/")
 def index():
-    return render_template("index.html", is_admin=False)
+    drive_connected = firebase_helper.get_drive_token() is not None
+    return render_template("index.html", is_admin=False, drive_connected=drive_connected)
 
 @app.route("/client")
 def client():
-    return render_template("index.html", is_admin=False)
+    drive_connected = firebase_helper.get_drive_token() is not None
+    return render_template("index.html", is_admin=False, drive_connected=drive_connected)
 
 @app.route("/admin")
 def admin():
     # Render the admin UI directly from the cloud page if requested,
     # but actual local file saving must run via local_admin.py on the laptop
-    return render_template("index.html", is_admin=True)
+    drive_connected = firebase_helper.get_drive_token() is not None
+    return render_template("index.html", is_admin=True, drive_connected=drive_connected)
 
 @app.route("/oauth/connect")
 def oauth_connect():
