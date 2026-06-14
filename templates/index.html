@@ -619,7 +619,7 @@
             </div>
           </div>
           <!-- Sync Logs / Result Drawer -->
-          <div id="drive-sync-logs" class="hidden bg-gray-50 border border-gray-100 rounded-xl p-4 text-xs font-mono text-gray-600 space-y-1.5 max-h-48 overflow-y-auto">
+          <div id="drive-sync-logs" class="hidden border border-[#E9E9E4] rounded-2xl overflow-hidden mt-4">
             <!-- Sync logs populated dynamically -->
           </div>
         </div>
@@ -1918,8 +1918,22 @@
                 if (logsDiv) logsDiv.innerHTML = `<div class="text-amber-600 font-bold text-xs">☁️ No new bills found on Google Drive.</div>`;
                 showToast("No new bills found on Google Drive.", "info");
               } else {
-                let html = `<div class="text-gray-900 font-bold text-sm mb-3">📁 Found <span id="sync-remaining-count">${files.length}</span> unsynced <span id="sync-remaining-label">${files.length === 1 ? 'file' : 'files'}</span> in Drive:</div>`;
-                html += `<div class="space-y-3">`;
+                let html = `
+                  <div class="flex items-center justify-between bg-gray-50/70 border-b border-[#E9E9E4] px-5 py-4">
+                    <div class="flex items-center gap-2.5">
+                      <svg class="w-5 h-5 text-amber-500 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                      </svg>
+                      <span class="font-outfit text-sm font-bold text-gray-900">Found <span id="sync-remaining-count">${files.length}</span> unsynced <span id="sync-remaining-label">${files.length === 1 ? 'file' : 'files'}</span> in Drive</span>
+                    </div>
+                    <button class="text-gray-400 hover:text-gray-600 transition-all cursor-pointer">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+                      </svg>
+                    </button>
+                  </div>
+                `;
+                html += `<div class="p-5 bg-gray-50/20 space-y-4">`;
                 files.forEach((f) => {
                   const safeName = f.name.replace(/'/g, "\\'");
                   const safeCategory = f.category.replace(/'/g, "\\'");
@@ -1928,66 +1942,77 @@
                   
                   const isImage = /\.(jpe?g|png|webp)$/i.test(f.name);
                   const iconHTML = isImage
-                    ? `<div class="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center shrink-0">
-                         <svg class="w-5.5 h-5.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    ? `<div class="w-14 h-14 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center shrink-0 border border-indigo-100 shadow-xs">
+                         <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                            <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                          </svg>
                        </div>`
-                    : `<div class="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center shrink-0">
-                         <svg class="w-5.5 h-5.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    : `<div class="w-14 h-14 bg-red-50 text-red-500 rounded-xl flex items-center justify-center shrink-0 border border-red-100 shadow-xs">
+                         <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                          </svg>
                        </div>`;
 
                   html += `
-                    <div id="sync-file-${f.id}" class="flex flex-col gap-3.5 p-5 bg-white border border-[#E9E9E4] rounded-2xl shadow-sm hover:shadow-md transition-all duration-200">
+                    <div id="sync-file-${f.id}" class="bg-white border border-[#E9E9E4] rounded-2xl p-5 shadow-xs flex flex-col gap-4">
                       <!-- Top row: File details and View option -->
-                      <div class="flex items-center gap-3">
+                      <div class="flex items-start gap-4">
                         ${iconHTML}
-                        <div class="min-w-0 flex-1">
-                          <div class="flex flex-wrap items-center gap-2">
-                            <span class="font-outfit text-sm font-bold text-gray-900 truncate" title="${escapeHTML(f.name)}">${escapeHTML(f.name)}</span>
-                            <a href="/view/${f.id}" target="_blank" class="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full transition-all" title="View File">
-                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3 h-3">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                              </svg>
-                              <span>View Image</span>
-                            </a>
-                          </div>
+                        <div class="min-w-0 flex-1 pt-0.5">
+                          <span class="block font-outfit text-base font-bold text-gray-900 truncate" title="${escapeHTML(f.name)}">${escapeHTML(f.name)}</span>
+                          <a href="/view/${f.id}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 mt-1" title="View Image">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            </svg>
+                            <span>View Image</span>
+                          </a>
                         </div>
                       </div>
 
                       <!-- Middle row: Directory selection (always fits full width) -->
-                      <div class="flex items-center gap-2.5 w-full bg-gray-50 border border-gray-100 rounded-xl p-2.5">
-                        <span class="text-xs font-bold text-gray-400 shrink-0">Save to:</span>
-                        <input 
-                          type="text" 
-                          id="sync-path-${f.id}" 
-                          value="${escapeHTML(defaultPath)}" 
-                          class="flex-grow min-w-0 bg-white border border-gray-200 text-gray-800 text-xs rounded-lg px-3 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand shadow-xs"
-                        />
+                      <div class="flex items-center gap-3">
+                        <span class="text-xs font-bold text-gray-500 shrink-0 min-w-[50px]">Save to:</span>
+                        <div class="relative flex-grow flex items-center">
+                          <div class="absolute left-3.5 text-gray-400 pointer-events-none">
+                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                            </svg>
+                          </div>
+                          <input 
+                            type="text" 
+                            id="sync-path-${f.id}" 
+                            value="${escapeHTML(defaultPath)}" 
+                            class="w-full bg-white border border-gray-200 text-gray-800 text-xs rounded-xl pl-9 pr-3 py-2.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand shadow-xs"
+                          />
+                        </div>
                         <button 
                           onclick="browseLaptopFolder('${f.id}')"
-                          class="shrink-0 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-xs transition-all cursor-pointer font-bold"
+                          class="shrink-0 bg-white hover:bg-gray-50 border border-gray-200 text-gray-750 text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer font-bold"
                         >
                           Browse...
                         </button>
                       </div>
 
                       <!-- Bottom row: Actions -->
-                      <div class="flex items-center justify-end gap-2.5 border-t border-gray-50 pt-3">
+                      <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-3.5">
                         <button 
                           onclick="rejectSyncFile('${f.id}', '${safeName}', '${safeCategory}')"
-                          class="text-gray-500 hover:text-red-600 hover:bg-red-50 text-xs font-semibold py-2 px-3.5 rounded-xl transition-all cursor-pointer"
+                          class="border border-red-100 hover:border-red-200 hover:bg-red-50 text-red-500 text-xs font-bold py-2.5 px-4.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
                         >
-                          Reject
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                          </svg>
+                          <span>Reject</span>
                         </button>
                         <button 
                           onclick="acceptSyncFile('${f.id}', '${safeName}')"
-                          class="bg-brand hover:bg-brand-hover text-white text-xs font-bold py-2 px-4 rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1"
+                          class="bg-[#0D6B45] hover:bg-[#0b5c3b] text-white text-xs font-bold py-2.5 px-5 rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
                         >
-                          Accept & Save
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-3.5 h-3.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                          </svg>
+                          <span>Accept & Save</span>
                         </button>
                       </div>
                     </div>
