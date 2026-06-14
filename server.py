@@ -44,6 +44,8 @@ def oauth_connect():
     if not os.path.exists(CREDENTIALS_PATH) and "GOOGLE_CREDENTIALS" not in os.environ:
         return "Missing credentials.json or GOOGLE_CREDENTIALS environment variable. Please configure Google OAuth credentials first.", 400
     redirect_uri = request.url_root.rstrip('/') + "/oauth2callback"
+    if "localhost" not in redirect_uri and "127.0.0.1" not in redirect_uri:
+        redirect_uri = redirect_uri.replace("http://", "https://")
     auth_url, code_verifier = drive_helper.generate_auth_url(CREDENTIALS_PATH, redirect_uri)
     session['code_verifier'] = code_verifier
     
@@ -59,6 +61,8 @@ def oauth_connect():
 def oauth2callback():
     authorization_response = request.url
     redirect_uri = request.url_root.rstrip('/') + "/oauth2callback"
+    if "localhost" not in redirect_uri and "127.0.0.1" not in redirect_uri:
+        redirect_uri = redirect_uri.replace("http://", "https://")
     code_verifier = session.get('code_verifier')
     try:
         drive_helper.save_credentials(
