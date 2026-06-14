@@ -1863,12 +1863,12 @@
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          Syncing...
+          Checking...
         `;
 
         if (logsDiv) {
           logsDiv.classList.remove("hidden");
-          logsDiv.innerHTML = `<div class="text-blue-500 font-bold">🔄 Checking Google Drive sync...</div>`;
+          logsDiv.innerHTML = `<div class="text-blue-500 font-bold text-xs">🔄 Checking Google Drive...</div>`;
         }
 
         fetch("/sync-drive")
@@ -1880,29 +1880,99 @@
           })
           .then((data) => {
             if (data.status === "success") {
-              const synced = data.synced || [];
-              if (synced.length === 0) {
-                if (logsDiv) logsDiv.innerHTML = `<div class="text-amber-600 font-bold">☁️ No new bills found on Google Drive.</div>`;
-                showToast("No new bills to sync from Google Drive.", "info");
+              const files = data.files || [];
+              if (files.length === 0) {
+                if (logsDiv) logsDiv.innerHTML = `<div class="text-amber-600 font-bold text-xs">☁️ No new bills found on Google Drive.</div>`;
+                showToast("No new bills found on Google Drive.", "info");
               } else {
-                let html = `<div class="text-green-600 font-bold mb-1">🎉 Sync finished successfully! Synced ${synced.length} files:</div>`;
-                synced.forEach((f) => {
-                  html += `<div class="pl-2 text-gray-700">🟢 [Saved] <span class="font-bold text-gray-900">${escapeHTML(f.filename)}</span> ➔ folder <span class="font-bold text-gray-900">${escapeHTML(f.folder)}</span></div>`;
+                let html = `<div class="text-gray-900 font-bold text-xs mb-2">📁 Found ${files.length} unsynced files in Drive:</div>`;
+                html += `<div class="space-y-2.5">`;
+                files.forEach((f) => {
+                  const safeName = f.name.replace(/'/g, "\\'");
+                  const safeCategory = f.category.replace(/'/g, "\\'");
+                  html += `
+                    <div id="sync-file-${f.id}" class="flex items-center justify-between gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-xs">
+                      <div class="min-w-0">
+                        <p class="font-bold text-gray-800 text-[11px] truncate" title="${escapeHTML(f.name)}">${escapeHTML(f.name)}</p>
+                        <p class="text-[9px] text-gray-500 mt-0.5">Destination: <span class="font-semibold text-brand">${escapeHTML(f.category)}</span></p>
+                      </div>
+                      <button 
+                        onclick="acceptSyncFile('${f.id}', '${safeName}', '${safeCategory}')"
+                        class="bg-brand hover:bg-brand-hover text-white text-[10px] font-bold py-1.5 px-3 rounded-lg shadow-xs transition-all cursor-pointer shrink-0"
+                      >
+                        Accept & Save
+                      </button>
+                    </div>
+                  `;
                 });
+                html += `</div>`;
                 if (logsDiv) logsDiv.innerHTML = html;
-                showToast(`Successfully synced ${synced.length} bills! 🎉`, "success");
               }
             } else {
               throw new Error("Unknown error");
             }
           })
           .catch((err) => {
-            if (logsDiv) logsDiv.innerHTML = `<div class="text-red-500 font-bold">❌ Error during sync: ${escapeHTML(err.message)}</div>`;
-            showToast(err.message || "Failed to sync Google Drive", "error");
+            if (logsDiv) logsDiv.innerHTML = `<div class="text-red-500 font-bold text-xs">❌ Error: ${escapeHTML(err.message)}</div>`;
+            showToast(err.message || "Failed to check Google Drive", "error");
           })
           .finally(() => {
             btnSync.disabled = false;
             btnSync.innerHTML = originalHTML;
+          });
+      }
+
+      function acceptSyncFile(fileId, filename, category) {
+        const row = document.getElementById(`sync-file-${fileId}`);
+        const btn = row ? row.querySelector("button") : null;
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = `
+            <svg class="animate-spin h-3 w-3 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg> Saving...
+          `;
+        }
+
+        fetch("/sync-accept", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: fileId, filename: filename, category: category })
+        })
+          .then((res) => {
+            if (!res.ok) {
+              return res.json().then((err) => { throw new Error(err.error || "Save failed"); });
+            }
+            return res.json();
+          })
+          .then((data) => {
+            showToast(`Saved ${filename} successfully! 🎉`, "success");
+            if (row) {
+              row.innerHTML = `
+                <div class="text-[10px] text-emerald-600 font-bold py-1 flex items-center gap-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-3.5 h-3.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                  </svg>
+                  <span>Synced to folder: <strong>${escapeHTML(category)}</strong></span>
+                </div>
+              `;
+              
+              setTimeout(() => {
+                row.remove();
+                const logsDiv = document.getElementById("drive-sync-logs");
+                if (logsDiv && logsDiv.querySelectorAll("[id^='sync-file-']").length === 0) {
+                  logsDiv.innerHTML = `<div class="text-green-600 font-bold text-xs">🎉 All files successfully synced!</div>`;
+                }
+              }, 2000);
+            }
+          })
+          .catch((err) => {
+            showToast(err.message || "Failed to save file", "error");
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = "Accept & Save";
+            }
           });
       }
     </script>

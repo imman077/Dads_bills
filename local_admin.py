@@ -101,52 +101,64 @@ def sync_drive():
         r_list = requests.get(f"{CLOUD_SERVER_URL}/sync-drive")
         if r_list.status_code != 200:
             return jsonify({"error": f"Failed to get sync list from Cloud Server: {r_list.text}"}), r_list.status_code
-            
-        data = r_list.json()
-        files = data.get("files", [])
-        
-        synced_files = []
-        for item in files:
-            file_id = item["id"]
-            filename = item["name"]
-            folder_name = item["category"]  # e.g., "Current Bill", "Other"
-            
-            # 2. Fetch the file content from Cloud Server
-            r_file = requests.get(f"{CLOUD_SERVER_URL}/view/{file_id}")
-            if r_file.status_code != 200:
-                print(f"[Local Admin] Failed to download file {filename} (ID: {file_id})")
-                continue
-                
-            # 3. Save the file locally on laptop disk
-            save_dir = get_save_folder(folder_name)
-            base, ext = os.path.splitext(filename)
-            path = os.path.join(save_dir, filename)
-            
-            counter = 1
-            while os.path.exists(path):
-                filename = f"{base}_{counter}{ext}"
-                path = os.path.join(save_dir, filename)
-                counter += 1
-                
-            with open(path, "wb") as f_out:
-                f_out.write(r_file.content)
-            print(f"[Local Admin] Saved synced file to: {path}")
-            
-            # 4. Tell Cloud Server to approve/delete from Drive & mark as approved in Firestore
-            r_decide = requests.get(f"{CLOUD_SERVER_URL}/decide/{file_id}/approve")
-            if r_decide.status_code == 200:
-                synced_files.append({
-                    "filename": filename,
-                    "folder": folder_name
-                })
-            else:
-                print(f"[Local Admin] Cloud approval state failed to sync for file {filename}")
-                
-        return jsonify({"status": "success", "synced": synced_files})
-        
+        return jsonify(r_list.json())
     except Exception as e:
-        print(f"[Local Admin] Error during sync: {e}")
-        return jsonify({"error": f"Sync failed: {str(e)}"}), 500
+        print(f"[Local Admin] Error checking sync: {e}")
+        return jsonify({"error": f"Failed to check sync list: {str(e)}"}), 500
+
+@app.route("/sync-accept", methods=["POST"])
+def sync_accept():
+    try:
+        data = request.json
+        file_id = data.get("id")
+        filename = data.get("filename")
+        folder_name = data.get("category")
+        
+        if not file_id or not filename or not folder_name:
+            return jsonify({"error": "Missing parameters (id, filename, category)"}), 400
+            
+        # 1. Fetch the file content from Cloud Server
+        r_file = requests.get(f"{CLOUD_SERVER_URL}/view/{file_id}")
+        if r_file.status_code != 200:
+            return jsonify({"error": f"Failed to download file from Cloud Server: {r_file.text}"}), r_file.status_code
+            
+        # 2. Determine local folder and save path
+        save_dir = get_save_folder(folder_name)
+        base, ext = os.path.splitext(filename)
+        path = os.path.join(save_dir, filename)
+        
+        counter = 1
+        while os.path.exists(path):
+            filename = f"{base}_{counter}{ext}"
+            path = os.path.join(save_dir, filename)
+            counter += 1
+            
+        # 3. Save the file locally on the laptop disk
+        with open(path, "wb") as f_out:
+            f_out.write(r_file.content)
+        print(f"[Local Admin] Successfully saved file locally to: {path}")
+        
+        # 4. Trigger Windows native notification
+        try:
+            from plyer import notification
+            notification.notify(
+                title="Bill Saved Locally! 📁",
+                message=f"File: {filename}\nFolder: {folder_name}",
+                app_name="Dad Bills",
+                timeout=5
+            )
+        except Exception as ne:
+            print(f"[Warning] Desktop notification failed: {ne}")
+            
+        # 5. Tell Cloud Server to approve (deletes from Google Drive & marks approved in Firestore)
+        r_decide = requests.get(f"{CLOUD_SERVER_URL}/decide/{file_id}/approve")
+        if r_decide.status_code != 200:
+            return jsonify({"error": "File saved locally but Cloud Server approval state failed to sync."}), 502
+            
+        return jsonify({"status": "success", "filename": filename, "folder": folder_name})
+    except Exception as e:
+        print(f"[Local Admin] Error during sync accept: {e}")
+        return jsonify({"error": f"Failed to save file: {str(e)}"}), 500
 
 @app.route("/view/<file_id>")
 def view_pdf(file_id):
