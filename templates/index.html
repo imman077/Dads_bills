@@ -1940,8 +1940,9 @@
                        </div>`;
 
                   html += `
-                    <div id="sync-file-${f.id}" class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-white border border-[#E9E9E4] rounded-2xl shadow-sm hover:shadow-md transition-all duration-200">
-                      <div class="flex items-center gap-3.5 flex-1 min-w-0">
+                    <div id="sync-file-${f.id}" class="flex flex-col gap-3.5 p-5 bg-white border border-[#E9E9E4] rounded-2xl shadow-sm hover:shadow-md transition-all duration-200">
+                      <!-- Top row: File details and View option -->
+                      <div class="flex items-center gap-3">
                         ${iconHTML}
                         <div class="min-w-0 flex-1">
                           <div class="flex flex-wrap items-center gap-2">
@@ -1954,24 +1955,28 @@
                               <span>View Image</span>
                             </a>
                           </div>
-                          <div class="flex items-center gap-2 mt-2 w-full">
-                            <span class="text-xs font-bold text-gray-400 shrink-0">Save to:</span>
-                            <input 
-                              type="text" 
-                              id="sync-path-${f.id}" 
-                              value="${escapeHTML(defaultPath)}" 
-                              class="flex-grow min-w-[150px] sm:min-w-[250px] md:min-w-[320px] bg-gray-50 border border-gray-200 text-gray-800 text-xs rounded-xl px-3 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand shadow-inner"
-                            />
-                            <button 
-                              onclick="browseLaptopFolder('${f.id}')"
-                              class="shrink-0 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-700 text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer"
-                            >
-                              Browse...
-                            </button>
-                          </div>
                         </div>
                       </div>
-                      <div class="flex items-center gap-2.5 shrink-0 justify-end border-t border-gray-50 pt-3 md:pt-0 md:border-0">
+
+                      <!-- Middle row: Directory selection (always fits full width) -->
+                      <div class="flex items-center gap-2.5 w-full bg-gray-50 border border-gray-100 rounded-xl p-2.5">
+                        <span class="text-xs font-bold text-gray-400 shrink-0">Save to:</span>
+                        <input 
+                          type="text" 
+                          id="sync-path-${f.id}" 
+                          value="${escapeHTML(defaultPath)}" 
+                          class="flex-grow min-w-0 bg-white border border-gray-200 text-gray-800 text-xs rounded-lg px-3 py-1.5 font-semibold focus:outline-none focus:ring-1 focus:ring-brand shadow-xs"
+                        />
+                        <button 
+                          onclick="browseLaptopFolder('${f.id}')"
+                          class="shrink-0 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-xs transition-all cursor-pointer font-bold"
+                        >
+                          Browse...
+                        </button>
+                      </div>
+
+                      <!-- Bottom row: Actions -->
+                      <div class="flex items-center justify-end gap-2.5 border-t border-gray-50 pt-3">
                         <button 
                           onclick="rejectSyncFile('${f.id}', '${safeName}', '${safeCategory}')"
                           class="text-gray-500 hover:text-red-600 hover:bg-red-50 text-xs font-semibold py-2 px-3.5 rounded-xl transition-all cursor-pointer"
