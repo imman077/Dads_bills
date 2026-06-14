@@ -1923,13 +1923,28 @@
                 files.forEach((f) => {
                   const safeName = f.name.replace(/'/g, "\\'");
                   const safeCategory = f.category.replace(/'/g, "\\'");
+                  
+                  const standardFolders = ["Current Bill", "Water Bill Receipt", "Jio Fiber", "Other"];
+                  let selectOptions = "";
+                  if (f.category && !standardFolders.includes(f.category)) {
+                    selectOptions += `<option value="${escapeHTML(f.category)}" selected>${escapeHTML(f.category)}</option>`;
+                  }
+                  standardFolders.forEach((folder) => {
+                    selectOptions += `<option value="${folder}" ${f.category === folder ? 'selected' : ''}>${folder}</option>`;
+                  });
+
                   html += `
-                    <div id="sync-file-${f.id}" class="flex items-center justify-between gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-xs">
-                      <div class="min-w-0">
+                    <div id="sync-file-${f.id}" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-white border border-gray-200 rounded-xl shadow-xs">
+                      <div class="min-w-0 flex-1">
                         <p class="font-bold text-gray-800 text-[11px] truncate" title="${escapeHTML(f.name)}">${escapeHTML(f.name)}</p>
-                        <p class="text-[9px] text-gray-500 mt-0.5">Destination: <span class="font-semibold text-brand">${escapeHTML(f.category)}</span></p>
+                        <div class="flex items-center gap-1.5 mt-1.5">
+                          <span class="text-[9px] text-gray-400">Save to:</span>
+                          <select id="sync-folder-${f.id}" class="bg-gray-50 border border-gray-200 text-gray-700 text-[9px] rounded-lg px-2 py-0.5 font-bold focus:outline-none focus:ring-1 focus:ring-brand cursor-pointer">
+                            ${selectOptions}
+                          </select>
+                        </div>
                       </div>
-                      <div class="flex items-center gap-2 shrink-0">
+                      <div class="flex items-center gap-2 shrink-0 justify-end">
                         <button 
                           onclick="rejectSyncFile('${f.id}', '${safeName}', '${safeCategory}')"
                           class="text-gray-500 hover:text-red-600 hover:bg-red-50 text-[10px] font-semibold py-1.5 px-2.5 rounded-lg transition-all cursor-pointer"
@@ -1937,7 +1952,7 @@
                           Reject
                         </button>
                         <button 
-                          onclick="acceptSyncFile('${f.id}', '${safeName}', '${safeCategory}')"
+                          onclick="acceptSyncFile('${f.id}', '${safeName}')"
                           class="bg-brand hover:bg-brand-hover text-white text-[10px] font-bold py-1.5 px-3 rounded-lg shadow-xs transition-all cursor-pointer"
                         >
                           Accept & Save
@@ -1963,9 +1978,12 @@
           });
       }
 
-      function acceptSyncFile(fileId, filename, category) {
+      function acceptSyncFile(fileId, filename) {
         const row = document.getElementById(`sync-file-${fileId}`);
-        const btn = row ? row.querySelector("button") : null;
+        const selectEl = document.getElementById(`sync-folder-${fileId}`);
+        const category = selectEl ? selectEl.value : "Other";
+        const btn = row ? row.querySelector("button:last-child") : null;
+
         if (btn) {
           btn.disabled = true;
           btn.innerHTML = `
@@ -2023,8 +2041,11 @@
           });
       }
 
-      function rejectSyncFile(fileId, filename, category) {
+      function rejectSyncFile(fileId, filename, originalCategory) {
         const row = document.getElementById(`sync-file-${fileId}`);
+        const selectEl = document.getElementById(`sync-folder-${fileId}`);
+        const category = selectEl ? selectEl.value : originalCategory;
+
         showToast(`Rejected ${filename} (Stayed in Google Drive)`, "info");
         if (row) {
           row.innerHTML = `
