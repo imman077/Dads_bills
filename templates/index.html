@@ -1918,7 +1918,7 @@
                 if (logsDiv) logsDiv.innerHTML = `<div class="text-amber-600 font-bold text-xs">☁️ No new bills found on Google Drive.</div>`;
                 showToast("No new bills found on Google Drive.", "info");
               } else {
-                let html = `<div class="text-gray-900 font-bold text-xs mb-2">📁 Found ${files.length} unsynced files in Drive:</div>`;
+                let html = `<div class="text-gray-900 font-bold text-xs mb-2">📁 Found <span id="sync-remaining-count">${files.length}</span> unsynced <span id="sync-remaining-label">${files.length === 1 ? 'file' : 'files'}</span> in Drive:</div>`;
                 html += `<div class="space-y-2.5">`;
                 files.forEach((f) => {
                   const safeName = f.name.replace(/'/g, "\\'");
@@ -1994,8 +1994,14 @@
               setTimeout(() => {
                 row.remove();
                 const logsDiv = document.getElementById("drive-sync-logs");
-                if (logsDiv && logsDiv.querySelectorAll("[id^='sync-file-']").length === 0) {
+                const remainingCount = logsDiv ? logsDiv.querySelectorAll("[id^='sync-file-']").length : 0;
+                if (remainingCount === 0) {
                   logsDiv.innerHTML = `<div class="text-green-600 font-bold text-xs">🎉 All files successfully synced!</div>`;
+                } else {
+                  const countSpan = document.getElementById("sync-remaining-count");
+                  const labelSpan = document.getElementById("sync-remaining-label");
+                  if (countSpan) countSpan.textContent = remainingCount;
+                  if (labelSpan) labelSpan.textContent = remainingCount === 1 ? "file" : "files";
                 }
               }, 2000);
             }
