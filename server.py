@@ -132,9 +132,10 @@ def upload():
     if not safe_name:
         safe_name = "Unknown"
 
-    service = drive_helper.get_drive_service(CREDENTIALS_PATH)
-    if not service:
-        return jsonify({"error": "Google Drive is not connected. Please connect Google Drive first."}), 400
+    try:
+        service = drive_helper.get_drive_service_verbose(CREDENTIALS_PATH)
+    except Exception as e:
+        return jsonify({"error": f"Google Drive is not connected: {str(e)}"}), 400
 
     if category == "custom":
         folder_name = custom_folder

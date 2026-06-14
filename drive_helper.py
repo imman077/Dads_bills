@@ -43,6 +43,40 @@ def get_drive_service(credentials_path):
         print(f"[Google Drive] Error building service: {e}")
         return None
 
+def get_drive_service_verbose(credentials_path):
+    token_json_str = firebase_helper.get_drive_token()
+    if not token_json_str:
+        raise Exception("Token JSON from Firestore is empty or None. Please reconnect Google Drive.")
+        
+    try:
+        token_info = json.loads(token_json_str)
+    except Exception as e:
+        raise Exception(f"Failed to parse token JSON: {str(e)}")
+        
+    try:
+        creds = Credentials.from_authorized_user_info(token_info, SCOPES)
+    except Exception as e:
+        raise Exception(f"Failed to create Credentials from token: {str(e)}")
+        
+    if not creds:
+        raise Exception("Credentials object is None after loading")
+        
+    if not creds.valid:
+        if creds.expired and creds.refresh_token:
+            try:
+                creds.refresh(Request())
+                firebase_helper.save_drive_token(creds.to_json())
+            except Exception as e:
+                raise Exception(f"Failed to refresh credentials: {str(e)}")
+        else:
+            raise Exception(f"Credentials are invalid. Expired: {creds.expired}, Has Refresh Token: {creds.refresh_token is not None}")
+            
+    try:
+        service = build('drive', 'v3', credentials=creds)
+        return service
+    except Exception as e:
+        raise Exception(f"Failed to build drive service: {str(e)}")
+
 def get_flow(credentials_path, redirect_uri, code_verifier=None):
     # 1. Try loading from environment variable
     cred_json = os.environ.get("GOOGLE_CREDENTIALS")
