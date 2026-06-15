@@ -1245,28 +1245,8 @@
             if (data.length === 0) {
               closeReviewModal();
               isFirstPendingFetch = false;
-              // Check if we are already showing the empty state and it has no spinner, to avoid re-rendering
-              if (
-                lastPendingData.length === 0 &&
-                container.children.length > 0 &&
-                !container.querySelector(".animate-spin")
-              ) {
-                return;
-              }
-              container.innerHTML = `
-            <div class="bg-white border border-[#E9E9E4] rounded-2xl p-10 text-center shadow-sm space-y-4 fade-in">
-              <div class="w-16 h-16 bg-[#F9F9F7] text-gray-300 rounded-full flex items-center justify-center mx-auto">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
-                </svg>
-              </div>
-              <div class="space-y-1">
-                <h4 class="font-outfit font-bold text-gray-800 text-lg">All caught up!</h4>
-                <p class="text-sm text-gray-400">No pending bills to review at the moment.</p>
-              </div>
-            </div>
-          `;
               lastPendingData = [];
+              refreshEmptyState();
               return;
             }
 
@@ -1600,6 +1580,59 @@
           .catch(() => {});
       }
 
+      // Toggle collapse/expand of sync logs container
+      function toggleSyncLogsCollapse() {
+        const container = document.getElementById("sync-files-container");
+        const icon = document.getElementById("sync-collapse-icon");
+        if (!container || !icon) return;
+        
+        const isCollapsed = container.classList.contains("hidden");
+        if (isCollapsed) {
+          container.classList.remove("hidden");
+          icon.classList.remove("rotate-180");
+        } else {
+          container.classList.add("hidden");
+          icon.classList.add("rotate-180");
+        }
+      }
+
+      // Update the "All caught up" message visibility on the pending list view
+      function refreshEmptyState() {
+        const container = document.getElementById("pending-list");
+        const logsDiv = document.getElementById("drive-sync-logs");
+        
+        const hasPendingItems = lastPendingData && lastPendingData.length > 0;
+        const hasSyncItems = logsDiv && !logsDiv.classList.contains("hidden") && logsDiv.querySelectorAll("[id^='sync-file-']").length > 0;
+        
+        if (!hasPendingItems) {
+          if (hasSyncItems) {
+            // Clear the "All caught up!" card if we have sync files to review
+            const caughtUpDiv = container.querySelector("h4");
+            if (caughtUpDiv && caughtUpDiv.textContent.trim() === "All caught up!") {
+              container.innerHTML = "";
+            }
+          } else {
+            // Neither pending nor sync files exist, show "All caught up!"
+            const caughtUpDiv = container.querySelector("h4");
+            if (!caughtUpDiv || caughtUpDiv.textContent.trim() !== "All caught up!") {
+              container.innerHTML = `
+                <div class="bg-white border border-[#E9E9E4] rounded-2xl p-10 text-center shadow-sm space-y-4 fade-in">
+                  <div class="w-16 h-16 bg-[#F9F9F7] text-gray-300 rounded-full flex items-center justify-center mx-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+                    </svg>
+                  </div>
+                  <div class="space-y-1">
+                    <h4 class="font-outfit font-bold text-gray-800 text-lg">All caught up!</h4>
+                    <p class="text-sm text-gray-400">No pending bills to review at the moment.</p>
+                  </div>
+                </div>
+              `;
+            }
+          }
+        }
+      }
+
       // Request HTML5 Desktop Notification permission
       function requestNotificationPermission() {
         if (!("Notification" in window)) {
@@ -1819,6 +1852,7 @@
         const btnConnect = document.getElementById("btn-drive-connect");
         const btnSync = document.getElementById("btn-drive-sync");
         const btnDisconnect = document.getElementById("btn-drive-disconnect");
+        const logsDiv = document.getElementById("drive-sync-logs");
 
         const clientAlert = document.getElementById("client-drive-alert");
         const uploadForm = document.getElementById("upload-form");
@@ -1852,6 +1886,11 @@
                 if (btnConnect) btnConnect.classList.remove("hidden");
                 if (btnSync) btnSync.classList.add("hidden");
                 if (btnDisconnect) btnDisconnect.classList.add("hidden");
+                if (logsDiv) {
+                  logsDiv.classList.add("hidden");
+                  logsDiv.innerHTML = "";
+                  refreshEmptyState();
+                }
               } else {
                 if (clientAlert) clientAlert.classList.remove("hidden");
                 if (uploadForm) uploadForm.classList.add("hidden");
@@ -1926,14 +1965,14 @@
                       </svg>
                       <span class="font-outfit text-sm font-bold text-gray-900">Found <span id="sync-remaining-count">${files.length}</span> unsynced <span id="sync-remaining-label">${files.length === 1 ? 'file' : 'files'}</span> in Drive</span>
                     </div>
-                    <button class="text-gray-400 hover:text-gray-600 transition-all cursor-pointer">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                    <button onclick="toggleSyncLogsCollapse()" class="text-gray-400 hover:text-gray-600 transition-all cursor-pointer">
+                      <svg id="sync-collapse-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4 transition-transform duration-200">
                         <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
                       </svg>
                     </button>
                   </div>
                 `;
-                html += `<div class="p-5 bg-gray-50/20 space-y-4">`;
+                html += `<div id="sync-files-container" class="p-5 bg-gray-50/20 space-y-4">`;
                 files.forEach((f) => {
                   const safeName = f.name.replace(/'/g, "\\'");
                   const safeCategory = f.category.replace(/'/g, "\\'");
@@ -2021,6 +2060,7 @@
                 html += `</div>`;
                 if (logsDiv) logsDiv.innerHTML = html;
               }
+              refreshEmptyState();
             } else {
               throw new Error("Unknown error");
             }
@@ -2117,6 +2157,7 @@
                   if (countSpan) countSpan.textContent = remainingCount;
                   if (labelSpan) labelSpan.textContent = remainingCount === 1 ? "file" : "files";
                 }
+                refreshEmptyState();
               }, 2000);
             }
           })
@@ -2168,6 +2209,7 @@
                   if (countSpan) countSpan.textContent = remainingCount;
                   if (labelSpan) labelSpan.textContent = remainingCount === 1 ? "file" : "files";
                 }
+                refreshEmptyState();
               }, 2000);
             }
           })
